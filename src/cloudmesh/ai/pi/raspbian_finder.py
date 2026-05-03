@@ -153,17 +153,23 @@ class RaspbianFinder(USBFinderBase):
         try:
             dev_name = disk_id.replace("/dev/", "")
             sys_path = f"/sys/block/{dev_name}/device"
-            curr = sys_path
-            while curr and curr != "/":
-                if "usb" in curr:
-                    # Look for port number in the path (e.g., .../usb1/1-1.2)
-                    match = re.search(r'usb\d+/(\d+)-(\d+)', curr)
-                    if match:
-                        # This is a simplification; actual mapping depends on Pi model
-                        # but usually the last digit of the port path relates to the slot
-                        port = int(match.group(2))
-                        return (port % 4) + 1
-                curr = os.path.dirname(curr)
+            
+            # We need the full path to find the port number
+            # Example: /sys/devices/.../usb1/1-1/1-1.4/1-1.4:1.0/...
+            # The port is the digit after the dot in the segment like '1-1.4'
+            
+            # Use readlink to get the absolute path from /sys/block/sdX/device
+            full_path = subprocess.check_output(["readlink", "-f", sys_path], text=True)
+            
+            # Look for the pattern X-Y.Z where Z is the port
+            # We look for the last occurrence of this pattern before the 'host' or 'target' parts
+            matches = re.findall(r'(\d+-\d+\.(\d+))', full_path)
+            if matches:
+                # The last match before the device itself is usually the physical port
+                last_match = matches[-1]
+                port = int(last_match[1])
+                if 1 <= port <= 4:
+                    return port
         except Exception:
             pass
         return 0

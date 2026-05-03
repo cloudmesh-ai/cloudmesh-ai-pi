@@ -193,24 +193,29 @@ class USBFinder:
                 except Exception as e:
                     logger.debug(f"udevadm failed for {disk_id}: {e}")
 
-                # Fallback to lsusb if udevadm didn't find the USB ID
+                # Fallback: Resolve USB ID via sysfs path traversal
                 if info["usb_id"] == "Unknown":
                     try:
-                        # Find the device in lsusb output by matching the device path or model
-                        lsusb_output = subprocess.check_output(["lsusb", "-v"], text=True)
-                        # This is a complex parse, but we look for the device that matches our disk_id
-                        # A simpler way is to use lsusb -t to find the bus/dev and then match
-                        # For now, let's try to find the vendor/product if we have a model name
-                        if info["model"] != "Unknown":
-                            for line in lsusb_output.splitlines():
-                                if info["model"] in line and "id" in line.lower():
-                                    match = re.search(r"id\s+([0-9a-fA-F]{4}):([0-9a-fA-F]{4})", line)
-                                    if match:
-                                        info["idVendor"], info["idProduct"] = match.groups()
-                                        info["usb_id"] = f"{info['idVendor']}:{info['idProduct']}"
-                                        break
+                        # disk_id is /dev/sdX. We look in /sys/block/sdX/
+                        dev_name = disk_id.replace("/dev/", "")
+                        sys_path = f"/sys/block/{dev_name}/device"
+                        
+                        # Traverse up the device tree until we find a folder with 'idVendor'
+                        curr = sys_path
+                        while curr and curr != "/":
+                            vendor_file = f"{curr}/idVendor"
+                            product_file = f"{curr}/idProduct"
+                            if os.path.exists(vendor_file) and os.path.exists(product_file):
+                                with open(vendor_file, 'r') as f: info["idVendor"] = f.read().strip()
+                                with open(product_file, 'r') as f: info["idProduct"] = f.read().strip()
+                                info["usb_id"] = f"{info['idVendor']}:{info['idProduct']}"
+                                break
+                            # Move up to parent device
+                            parent = os.path.dirname(curr)
+                            if parent == curr: break
+                            curr = parent
                     except Exception as e:
-                        logger.debug(f"lsusb fallback failed for {disk_id}: {e}")
+                        logger.debug(f"sysfs traversal failed for {disk_id}: {e}")
         except Exception as e:
             logger.debug(f"Error fetching detailed device info for {disk_id}: {e}")
         

@@ -77,7 +77,10 @@ class USBFinder:
             "product": "Unknown",
             "idVendor": "Unknown",
             "idProduct": "Unknown",
-            "serial": "Unknown"
+            "serial": "Unknown",
+            "bus": "Unknown",
+            "device": "Unknown",
+            "usb_id": "Unknown"
         }
         try:
             if self.system == "Darwin":
@@ -152,7 +155,8 @@ class USBFinder:
             else:
                 # Linux: Use lsblk for basic info
                 try:
-                    output = subprocess.check_output(["lsblk", "-dno", "MODEL,SIZE,TRAN", disk_id], text=True)
+                    # Use -o to get more specific columns
+                    output = subprocess.check_output(["lsblk", "-dno", "MODEL,SIZE,TRAN,BUS,DEV", disk_id], text=True)
                     parts = output.strip().split()
                     if len(parts) >= 1: info["model"] = parts[0]
                     if len(parts) >= 2: 
@@ -164,6 +168,8 @@ class USBFinder:
                             mult = {"K": 1024, "M": 1024**2, "G": 1024**3, "T": 1024**4}
                             info["size_bytes"] = int(val) * mult.get(unit, 1)
                     if len(parts) >= 3: info["protocol"] = parts[2]
+                    if len(parts) >= 4: info["bus"] = parts[3]
+                    if len(parts) >= 5: info["device"] = parts[4]
                     info["type"] = "USB/External" if info["protocol"] == "usb" else "Block Device"
                 except Exception as e:
                     logger.debug(f"lsblk failed for {disk_id}: {e}")
@@ -181,6 +187,10 @@ class USBFinder:
                             elif key == "ID_SERIAL_SHORT": info["serial"] = val
                             elif key == "ID_VENDOR": info["vendor"] = val
                             elif key == "ID_MODEL": info["product"] = val
+                            elif key == "ID_USB_DRIVER": info["protocol"] = "usb"
+                    
+                    if info["idVendor"] != "Unknown" and info["idProduct"] != "Unknown":
+                        info["usb_id"] = f"{info['idVendor']}:{info['idProduct']}"
                 except Exception as e:
                     logger.debug(f"udevadm failed for {disk_id}: {e}")
         except Exception as e:

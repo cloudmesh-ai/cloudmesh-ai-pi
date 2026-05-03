@@ -212,16 +212,22 @@ def discover_usb():
 
         table = Table(title="USB Device Discovery Results", show_lines=True)
         table.add_column("Device", style="blue")
-        table.add_column("Vendor ID", style="cyan")
-        table.add_column("Product ID", style="magenta")
-        table.add_column("Serial", style="green")
+        table.add_column("USB ID", style="cyan")
+        table.add_column("Vendor", style="green")
+        table.add_column("Product", style="magenta")
+        table.add_column("Serial", style="yellow")
+        table.add_column("Size", style="white")
+        table.add_column("Bus/Dev", style="dim")
 
         for dev in devices:
             table.add_row(
+                dev.get("model", "Unknown"),
+                dev.get("usb_id", "Unknown"),
+                dev.get("vendor", "Unknown"),
                 dev.get("product", "Unknown"),
-                dev.get("idVendor", "Unknown"),
-                dev.get("idProduct", "Unknown"),
-                dev.get("serial", "Unknown")
+                dev.get("serial", "Unknown"),
+                dev.get("size", "Unknown"),
+                f"{dev.get('bus', 'U')}/{dev.get('device', 'U')}"
             )
         console.print(table)
     except Exception as e:

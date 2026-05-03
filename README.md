@@ -144,6 +144,8 @@ cmc pi burn --config cluster.yaml --node node-01 --dump
 ## Quick Installation (Bootstrap)
 If you are on a vanilla Raspberry Pi OS image and need to install the `cmc` toolset quickly (even if `git` is not yet installed), you can use the bootstrap script.
 
+**Note:** The bootstrap script uses SSH to clone repositories. Ensure you have an SSH key configured on your Pi and added to your GitHub account. You may need to run `ssh-add ~/.ssh/id_rsa` before starting.
+
 **Recommended (via GitHub Pages):**
 ```bash
 curl -sSL https://cloudmesh-ai.github.io/pi.sh | sh
@@ -151,13 +153,13 @@ curl -sSL https://cloudmesh-ai.github.io/pi.sh | sh
 
 **Alternative (via Raw GitHub):**
 ```bash
-curl -sSL https://github.com/cloudmesh/cloudmesh-ai-pi/raw/main/pi.sh | sh
+curl -sSLf https://raw.githubusercontent.com/cloudmesh-ai/cloudmesh-ai-pi/main/pi.sh | bash
 ```
 
 This script will:
 1. Install `git` and build essentials.
-2. Clone the `cloudmesh-ai-common` and `cloudmesh-ai-pi` repositories.
-3. Run `make local` to install the toolset and its dependencies.
+2. Clone the `cloudmesh-ai-common` and `cloudmesh-ai-pi` repositories via SSH.
+3. Install the toolset and its dependencies.
 
 ---
 
@@ -231,7 +233,7 @@ To contribute to the `cloudmesh-ai-pi` tool or test new features, you can check 
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/cloudmesh/cloudmesh-ai-pi.git
+   git clone git@github.com:cloudmesh-ai/cloudmesh-ai-pi.git
    cd cloudmesh-ai-pi
    ```
 

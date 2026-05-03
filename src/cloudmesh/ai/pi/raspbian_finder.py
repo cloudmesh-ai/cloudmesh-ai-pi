@@ -92,6 +92,28 @@ class RaspbianFinder(USBFinderBase):
             except Exception as e:
                 logger.debug(f"udevadm failed for {disk_id}: {e}")
 
+            # Fallback: Use lsusb to find Vendor/Product if udevadm failed
+            if info["usb_id"] == "Unknown":
+                try:
+                    lsusb_output = subprocess.check_output(["lsusb"], text=True)
+                    # Look for the model name in lsusb output
+                    if info["model"] != "Unknown":
+                        for line in lsusb_output.splitlines():
+                            if info["model"].lower() in line.lower():
+                                # Line format: Bus 001 Device 004: ID 0781:5581 Kingston Technology Co.
+                                match = re.search(r'ID ([0-9a-fA-F]{4}):([0-9a-fA-F]{4})', line)
+                                if match:
+                                    info["idVendor"] = match.group(1)
+                                    info["idProduct"] = match.group(2)
+                                    info["usb_id"] = f"{info['idVendor']}:{info['idProduct']}"
+                                    # Try to extract vendor/product from the rest of the line
+                                    parts = line.split("ID " + info["usb_id"] + " ")
+                                    if len(parts) > 1:
+                                        info["product"] = parts[1].strip()
+                                    break
+                except Exception as e:
+                    logger.debug(f"lsusb fallback failed: {e}")
+
             # 4. Aggressive sysfs traversal for USB ID and Bus/Dev
             try:
                 dev_name = disk_id.replace("/dev/", "")

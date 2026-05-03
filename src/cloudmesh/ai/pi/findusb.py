@@ -188,3 +188,11 @@ class USBFinder:
             logger.debug(f"Error fetching detailed device info for {disk_id}: {e}")
         
         return info
+
+def find_usb_devices():
+    """
+    Convenience function to find external USB devices.
+    Returns a set of device paths.
+    """
+    finder = USBFinder()
+    return finder.get_external_drives()

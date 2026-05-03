@@ -32,7 +32,7 @@ def find_usb_devices() -> Tuple[List[Dict[str, Any]], Dict[int, str]]:
     if isinstance(finder, RaspbianFinder):
         for dev in devices:
             slot = finder.get_usb_slot(dev["id"])
-            dev["slot"] = slot if slot > 0 else "Unknown"
+            dev["slot"] = str(slot) if slot > 0 else "Unknown"
             if slot > 0:
                 slot_map[slot] = dev["model"]
                 

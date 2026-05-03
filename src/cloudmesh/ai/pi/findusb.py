@@ -1,232 +1,27 @@
-
 """
-USB Device Discovery Logic
-=========================
+USB Device Discovery Entry Point
+================================
 """
-
-import os
-import subprocess
 import platform
-import re
-import plistlib
-from typing import Set, Dict, Any
-from cloudmesh.ai.common.logging import get_logger
+from typing import List, Dict, Any, Tuple
+from cloudmesh.ai.pi.darwin_finder import DarwinFinder
+from cloudmesh.ai.pi.raspbian_finder import RaspbianFinder
 
-# Initialize Logger
-logger = get_logger("findusb")
-
-class USBFinder:
-    """Handles discovery and metadata extraction of external USB storage devices."""
-    
-    def __init__(self):
-        self.system = platform.system()
-
-    def get_external_drives(self) -> Set[str]:
-        """
-        Returns a set of external block devices, including those connected via USB hubs, 
-        filtered by size (excludes drives > 512GB).
-        """
-        candidates = set()
-        if self.system == "Darwin":
-            try:
-                # Use system_profiler for robust USB tree traversal on macOS
-                output = subprocess.check_output(["system_profiler", "SPUSBDataType"], text=True)
-                matches = re.findall(r"BSD Name: (disk\d+)", output)
-                for disk_id in matches:
-                    candidates.add(f"/dev/{disk_id}")
-                
-                # Fallback: boot-disk exclusion method
-                if not candidates:
-                    boot_disk_output = subprocess.check_output(["diskutil", "info", "/"], text=True)
-                    boot_disk = ""
-                    for line in boot_disk_output.splitlines():
-                        if "Device Node:" in line:
-                            boot_disk = line.split(":", 1)[1].strip()
-                            break
-                    list_output = subprocess.check_output(["diskutil", "list"], text=True)
-                    for line in list_output.splitlines():
-                        match = re.match(r"(/dev/disk\d+)", line.strip())
-                        if match:
-                            disk_id = match.group(1)
-                            if boot_disk and (boot_disk in disk_id or disk_id == boot_disk):
-                                continue
-                            candidates.add(disk_id)
-            except Exception as e:
-                logger.error(f"Error detecting drives on macOS: {e}")
-        else:
-            try:
-                output = subprocess.check_output(["lsblk", "-dno", "NAME"], text=True)
-                candidates = {f"/dev/{line.strip()}" for line in output.splitlines() if line.strip()}
-            except Exception as e:
-                logger.error(f"Error detecting drives on Linux: {e}")
-
-        # Return all candidates to avoid filtering issues
-        return candidates
-
-    def get_device_info(self, disk_id: str) -> Dict[str, Any]:
-        """Retrieves detailed metadata about the disk, including USB vendor and product strings."""
-        info = {
-            "id": disk_id,
-            "name": "Unknown",
-            "size": "Unknown",
-            "size_bytes": 0,
-            "model": "Unknown",
-            "protocol": "Unknown",
-            "type": "Unknown",
-            "vendor": "Unknown",
-            "product": "Unknown",
-            "idVendor": "Unknown",
-            "idProduct": "Unknown",
-            "serial": "Unknown",
-            "bus": "Unknown",
-            "device": "Unknown",
-            "usb_id": "Unknown"
-        }
-        try:
-            if self.system == "Darwin":
-                # 1. Basic disk info via diskutil
-                plist_data = subprocess.check_output(["diskutil", "info", "-plist", disk_id])
-                data = plistlib.loads(plist_data)
-                
-                info["name"] = data.get("DeviceName", "Unknown")
-                raw_size = data.get("TotalSize", 0)
-                if isinstance(raw_size, int):
-                    info["size_bytes"] = raw_size
-                    info["size"] = f"{raw_size // (1024**3)} GB"
-                else:
-                    info["size"] = str(raw_size)
-                
-                info["protocol"] = data.get("Protocol", "Unknown")
-                info["type"] = data.get("DeviceType", "Unknown")
-                
-                # 2. Enhanced USB info via system_profiler
-                usb_output = subprocess.check_output(["system_profiler", "SPUSBDataType"], text=True)
-                blocks = re.split(r'\n(?=[^\s])', usb_output)
-                for block in blocks:
-                    if f"BSD Name: {disk_id.replace('/dev/', '')}" in block:
-                        vendor_match = re.search(r"Manufacturer:\s*(.*)", block)
-                        product_match = re.search(r"Product:\s*(.*)", block)
-                        if vendor_match: info["vendor"] = vendor_match.group(1).strip()
-                        if product_match: info["product"] = product_match.group(1).strip()
-                        break
-                
-                # 3. Direct ioreg scan using the user's suggested command
-                try:
-                    # Use -r (recursive) and -c IOUSBHostDevice to group USB devices with their children
-                    ioreg_output = subprocess.check_output(["ioreg", "-r", "-c", "IOUSBHostDevice", "-l"], text=True)
-                    
-                    # Split output into blocks by the start of a new IOUSBHostDevice object
-                    # Objects typically start with a hex address at the beginning of the line
-                    blocks = re.split(r'(?=0x[0-9a-fA-F]+)', ioreg_output)
-                    disk_short = disk_id.replace('/dev/', '')
-                    
-                    for block in blocks:
-                        # If this USB device block contains the BSD Name of our disk, it's the correct device
-                        if f'"BSD Name" = "{disk_short}"' in block or f'BSD Name "{disk_short}"' in block:
-                            keys_to_find = {
-                                "USB Product Name": "usb_product_name",
-                                "USB Vendor Name": "usb_vendor_name",
-                                "kUSBProductString": "usb_product_string",
-                                "kUSBVendorString": "usb_vendor_string"
-                            }
-                            
-                            for label, internal_name in keys_to_find.items():
-                                pattern = rf'"{label}"\s*=\s*"?([^"\n\r]*)"?'
-                                match = re.search(pattern, block)
-                                if match:
-                                    val = match.group(1).strip().strip('"')
-                                    if val:
-                                        info[internal_name] = val
-                                        if "Vendor" in label and info["vendor"] == "Unknown":
-                                            info["vendor"] = val
-                                        if "Product" in label and info["product"] == "Unknown":
-                                            info["product"] = val
-                            break # Found the matching USB device
-                except Exception as e:
-                    logger.debug(f"ioreg scan failed for {disk_id}: {e}")
-
-                if info["name"] != "Unknown":
-                    info["model"] = info["name"]
-                elif info["product"] != "Unknown":
-                    info["model"] = info["product"]
-                elif info["protocol"] != "Unknown":
-                    info["model"] = f"{info['protocol']} Storage Device"
-
-            else:
-                # Linux: Use lsblk for basic info
-                try:
-                    # Remove BUS and DEV as they are not supported on all lsblk versions (e.g. Raspberry Pi)
-                    output = subprocess.check_output(["lsblk", "-dno", "MODEL,SIZE,TRAN", disk_id], text=True)
-                    parts = output.strip().split()
-                    if len(parts) >= 1: info["model"] = parts[0]
-                    if len(parts) >= 2: 
-                        size_str = parts[1]
-                        info["size"] = size_str
-                        match = re.match(r"(\d+)([GTMK])", size_str)
-                        if match:
-                            val, unit = match.groups()
-                            mult = {"K": 1024, "M": 1024**2, "G": 1024**3, "T": 1024**4}
-                            info["size_bytes"] = int(val) * mult.get(unit, 1)
-                    if len(parts) >= 3: info["protocol"] = parts[2]
-                    info["type"] = "USB/External" if info["protocol"] == "usb" else "Block Device"
-                except Exception as e:
-                    logger.debug(f"lsblk failed for {disk_id}: {e}")
-
-                # Use udevadm for robust USB metadata extraction
-                try:
-                    udev_output = subprocess.check_output(["udevadm", "info", "--query=all", "--name=" + disk_id], text=True)
-                    for line in udev_output.splitlines():
-                        if "=" in line:
-                            key, val = line.split("=", 1)
-                            key = key.strip()
-                            val = val.strip()
-                            # Try multiple common keys for vendor/product
-                            if key in ["ID_VENDOR_ID", "ID_USB_VENDOR_ID"]: info["idVendor"] = val
-                            elif key in ["ID_MODEL_ID", "ID_USB_MODEL_ID"]: info["idProduct"] = val
-                            elif key in ["ID_SERIAL_SHORT", "ID_SERIAL"]: info["serial"] = val
-                            elif key in ["ID_VENDOR", "ID_USB_VENDOR"]: info["vendor"] = val
-                            elif key in ["ID_MODEL", "ID_USB_MODEL"]: info["product"] = val
-                            elif key == "ID_USB_DRIVER": info["protocol"] = "usb"
-                    
-                    if info["idVendor"] != "Unknown" and info["idProduct"] != "Unknown":
-                        info["usb_id"] = f"{info['idVendor']}:{info['idProduct']}"
-                except Exception as e:
-                    logger.debug(f"udevadm failed for {disk_id}: {e}")
-
-                # Fallback: Resolve USB ID via sysfs path traversal
-                if info["usb_id"] == "Unknown":
-                    try:
-                        # disk_id is /dev/sdX. We look in /sys/block/sdX/
-                        dev_name = disk_id.replace("/dev/", "")
-                        sys_path = f"/sys/block/{dev_name}/device"
-                        
-                        # Traverse up the device tree until we find a folder with 'idVendor'
-                        curr = sys_path
-                        while curr and curr != "/":
-                            vendor_file = f"{curr}/idVendor"
-                            product_file = f"{curr}/idProduct"
-                            if os.path.exists(vendor_file) and os.path.exists(product_file):
-                                with open(vendor_file, 'r') as f: info["idVendor"] = f.read().strip()
-                                with open(product_file, 'r') as f: info["idProduct"] = f.read().strip()
-                                info["usb_id"] = f"{info['idVendor']}:{info['idProduct']}"
-                                break
-                            # Move up to parent device
-                            parent = os.path.dirname(curr)
-                            if parent == curr: break
-                            curr = parent
-                    except Exception as e:
-                        logger.debug(f"sysfs traversal failed for {disk_id}: {e}")
-        except Exception as e:
-            logger.debug(f"Error fetching detailed device info for {disk_id}: {e}")
-        
-        return info
-
-def find_usb_devices():
+def find_usb_devices() -> Tuple[List[Dict[str, Any]], Dict[int, str]]:
     """
     Convenience function to find external USB devices.
-    Returns a list of device info dictionaries.
+    Returns a tuple: (list of device info, slot_map)
     """
-    print("DEBUG: Loading find_usb_devices from local source")
-    finder = USBFinder()
+    system = platform.system()
+    finder = DarwinFinder() if system == "Darwin" else RaspbianFinder()
     drives = finder.get_external_drives()
-    return [finder.get_device_info(d) for d in drives]
+    devices = [finder.get_device_info(d) for d in drives]
+    
+    slot_map = {}
+    if isinstance(finder, RaspbianFinder):
+        for dev in devices:
+            slot = finder.get_usb_slot(dev["id"])
+            if slot > 0:
+                slot_map[slot] = dev["model"]
+                
+    return devices, slot_map

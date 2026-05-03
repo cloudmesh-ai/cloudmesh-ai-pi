@@ -205,7 +205,7 @@ def discover_usb():
     """
     from cloudmesh.ai.pi.findusb import find_usb_devices
     try:
-        devices = find_usb_devices()
+        devices, slot_map = find_usb_devices()
         if not devices:
             console.print("No USB devices discovered.")
             return
@@ -217,6 +217,7 @@ def discover_usb():
         table.add_column("Product", style="magenta")
         table.add_column("Serial", style="yellow")
         table.add_column("Size", style="white")
+        table.add_column("Mountpoint", style="magenta")
         table.add_column("Bus/Dev", style="dim")
 
         for dev in devices:
@@ -227,9 +228,28 @@ def discover_usb():
                 dev.get("product", "Unknown"),
                 dev.get("serial", "Unknown"),
                 dev.get("size", "Unknown"),
+                dev.get("mountpoint", "Unknown"),
                 f"{dev.get('bus', 'U')}/{dev.get('device', 'U')}"
             )
         console.print(table)
+
+        if slot_map:
+            console.print("\n[bold cyan]USB Slot Map (Physical Layout):[/bold cyan]")
+            console.print("  _______________________")
+            console.print(" |  [1]       [2]       |")
+            console.print(" |  Slot 1    Slot 2    |")
+            console.print(" |  ( )       ( )       |")
+            console.print(" |  |       |           |")
+            console.print(" |  |       |           |")
+            console.print(" |  [3]       [4]       |")
+            console.print(" |  Slot 3    Slot 4    |")
+            console.print(" |  ( )       ( )       |")
+            console.print(" |_______________________|")
+            
+            for slot in range(1, 5):
+                dev_name = slot_map.get(slot, "Empty")
+                console.print(f"Slot {slot}: {dev_name}")
+
     except Exception as e:
         console.error(f"USB discovery failed: {e}")
 

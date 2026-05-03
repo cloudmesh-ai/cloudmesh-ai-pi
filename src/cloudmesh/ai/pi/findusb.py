@@ -155,8 +155,8 @@ class USBFinder:
             else:
                 # Linux: Use lsblk for basic info
                 try:
-                    # Use -o to get more specific columns
-                    output = subprocess.check_output(["lsblk", "-dno", "MODEL,SIZE,TRAN,BUS,DEV", disk_id], text=True)
+                    # Remove BUS and DEV as they are not supported on all lsblk versions (e.g. Raspberry Pi)
+                    output = subprocess.check_output(["lsblk", "-dno", "MODEL,SIZE,TRAN", disk_id], text=True)
                     parts = output.strip().split()
                     if len(parts) >= 1: info["model"] = parts[0]
                     if len(parts) >= 2: 
@@ -168,8 +168,6 @@ class USBFinder:
                             mult = {"K": 1024, "M": 1024**2, "G": 1024**3, "T": 1024**4}
                             info["size_bytes"] = int(val) * mult.get(unit, 1)
                     if len(parts) >= 3: info["protocol"] = parts[2]
-                    if len(parts) >= 4: info["bus"] = parts[3]
-                    if len(parts) >= 5: info["device"] = parts[4]
                     info["type"] = "USB/External" if info["protocol"] == "usb" else "Block Device"
                 except Exception as e:
                     logger.debug(f"lsblk failed for {disk_id}: {e}")
@@ -182,11 +180,12 @@ class USBFinder:
                             key, val = line.split("=", 1)
                             key = key.strip()
                             val = val.strip()
-                            if key == "ID_VENDOR_ID": info["idVendor"] = val
-                            elif key == "ID_MODEL_ID": info["idProduct"] = val
-                            elif key == "ID_SERIAL_SHORT": info["serial"] = val
-                            elif key == "ID_VENDOR": info["vendor"] = val
-                            elif key == "ID_MODEL": info["product"] = val
+                            # Try multiple common keys for vendor/product
+                            if key in ["ID_VENDOR_ID", "ID_USB_VENDOR_ID"]: info["idVendor"] = val
+                            elif key in ["ID_MODEL_ID", "ID_USB_MODEL_ID"]: info["idProduct"] = val
+                            elif key in ["ID_SERIAL_SHORT", "ID_SERIAL"]: info["serial"] = val
+                            elif key in ["ID_VENDOR", "ID_USB_VENDOR"]: info["vendor"] = val
+                            elif key in ["ID_MODEL", "ID_USB_MODEL"]: info["product"] = val
                             elif key == "ID_USB_DRIVER": info["protocol"] = "usb"
                     
                     if info["idVendor"] != "Unknown" and info["idProduct"] != "Unknown":

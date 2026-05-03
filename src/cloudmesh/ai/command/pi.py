@@ -203,8 +203,21 @@ def discover_usb():
     """
     Discover USB devices connected to the Pi.
     """
-    from cloudmesh.ai.pi.findusb import find_usb_devices
+    import subprocess
     try:
+        # Print current git commit hash for version verification
+        try:
+            repo_path = "/home/admin/cloudmesh-ai/cloudmesh-ai-pi"
+            if os.path.exists(repo_path):
+                commit = subprocess.check_output(
+                    ["git", "-C", repo_path, "rev-parse", "HEAD"], 
+                    text=True, stderr=subprocess.DEVNULL
+                ).strip()
+                console.print(f"[bold yellow]Git Commit:[/bold yellow] {commit}")
+        except Exception:
+            console.print("[dim]Could not determine git commit hash[/dim]")
+
+        from cloudmesh.ai.pi.findusb import find_usb_devices
         devices, slot_map = find_usb_devices()
         if not devices:
             console.print("No USB devices discovered.")

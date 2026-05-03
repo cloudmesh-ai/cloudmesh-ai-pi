@@ -31,14 +31,7 @@ mkdir -p "$WORKSPACE"
 cd "$WORKSPACE"
 
 # 3. Clone Repositories
-echo "Verifying SSH connection to GitHub..."
-if ! ssh -T git@github.com 2>&1 | grep -q "successfully authenticated"; then
-    echo "Warning: SSH authentication to GitHub failed."
-    echo "Please ensure your SSH key is added to the agent (e.g., 'ssh-add ~/.ssh/id_rsa') and uploaded to GitHub."
-    echo "Continuing anyway..."
-fi
-
-REPOS="git@github.com:cloudmesh-ai/cloudmesh-ai-common.git git@github.com:cloudmesh-ai/cloudmesh-ai-pi.git"
+REPOS="https://github.com/cloudmesh-ai/cloudmesh-ai-common.git https://github.com/cloudmesh-ai/cloudmesh-ai-pi.git"
 
 for repo in $REPOS; do
     repo_name=$(basename "$repo" .git)

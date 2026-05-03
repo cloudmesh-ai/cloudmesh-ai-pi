@@ -31,7 +31,7 @@ mkdir -p "$WORKSPACE"
 cd "$WORKSPACE"
 
 # 3. Clone Repositories
-REPOS="https://github.com/cloudmesh/cloudmesh-ai-common.git https://github.com/cloudmesh/cloudmesh-ai-pi.git"
+REPOS="git@github.com:cloudmesh-ai/cloudmesh-ai-common.git git@github.com:cloudmesh-ai/cloudmesh-ai-pi.git"
 
 for repo in $REPOS; do
     repo_name=$(basename "$repo" .git)

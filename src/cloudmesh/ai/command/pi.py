@@ -229,7 +229,7 @@ def discover_usb():
         table.add_column("Label", style="yellow")
         table.add_column("Vendor", style="green")
         table.add_column("Product", style="magenta")
-        table.add_column("Size", style="white")
+        table.add_column("Size")
         table.add_column("Mountpoint", style="magenta")
         table.add_column("Bus/Dev", style="dim")
 

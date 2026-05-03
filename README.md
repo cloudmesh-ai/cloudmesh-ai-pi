@@ -13,6 +13,7 @@ This system provides a production-grade pipeline for flashing, configuring, and 
 - Post-Burn Installation
 - Production Hardening Details
 - Management and Maintenance
+- Development
 
 ---
 
@@ -140,6 +141,20 @@ cmc pi burn --config cluster.yaml --node node-01 --dump
 
 ---
 
+## Quick Installation (Bootstrap)
+If you are on a vanilla Raspberry Pi OS image and need to install the `cmc` toolset quickly (even if `git` is not yet installed), you can use the bootstrap script:
+
+```bash
+curl -sSL https://cloudmesh-ai.github.io/pi.sh | sh
+```
+
+This script will:
+1. Install `git` and build essentials.
+2. Clone the `cloudmesh-ai-common` and `cloudmesh-ai-pi` repositories.
+3. Run `make local` to install the toolset and its dependencies.
+
+---
+
 ## Post-Burn Installation
 Once the card is flashed and inserted into the Pi, boot the Pi and run the installation command:
 
@@ -199,3 +214,30 @@ cmc pi reset-burn
 ### Troubleshooting
 - Device not detected: Ensure you are running on Linux and have the latest Raspberry Pi Imager installed.
 - SSH Connection failed: Verify that the public key provided during the burn phase matches the private key used for connection.
+
+---
+
+## Development
+
+To contribute to the `cloudmesh-ai-pi` tool or test new features, you can check out the development version from Git.
+
+### Installation from Source
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/cloudmesh/cloudmesh-ai-pi.git
+   cd cloudmesh-ai-pi
+   ```
+
+2. Install in editable mode:
+   ```bash
+   pip install -e .
+   ```
+
+### Running Tests
+
+The project includes a test suite to verify the burner and installer logic. You can run the tests using the provided Makefile:
+
+```bash
+make test
+```

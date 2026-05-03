@@ -48,11 +48,14 @@ import sys
 import yaml
 import getpass
 import click
+import ipaddress
 
 from cloudmesh.ai.common.logging import get_logger
 from cloudmesh.ai.common.io import console
 from cloudmesh.ai.pi.burner import OpenClawBurner, ClusterBurner, BurnStateManager
 from cloudmesh.ai.pi.installer import PiInstaller
+from cloudmesh.ai.pi.network import NetworkDiscoverer
+from rich.table import Table
 
 # Initialize Logger
 logger = get_logger("pi")
@@ -152,6 +155,77 @@ def burn_cmd(config, node, name, user, key, image, gui, optimize_only, dump):
         raise
     except Exception as e:
         console.error(f"An error occurred: {e}")
+
+@pi_group.group(name="discover")
+def discover_group():
+    """
+    Discover devices connected to the Pi.
+    """
+    pass
+
+@discover_group.command(name="net")
+@click.option("--subnet", default="192.168.50.0/24", help="Subnet to scan (e.g. 192.168.50.0/24).")
+@click.option("--deep", is_flag=True, help="Perform a deep scan to find hostnames from service banners.")
+def discover_net(subnet, deep):
+    """
+    Discover devices on the local network using nmap.
+    """
+    try:
+        discoverer = NetworkDiscoverer(subnet=subnet)
+        devices = discoverer.discover(deep=deep)
+        
+        if not devices:
+            console.print("No devices discovered.")
+            return
+
+        # Sort devices by IP address numerically
+        try:
+            devices.sort(key=lambda x: ipaddress.ip_address(x["ip"]))
+        except Exception:
+            # Fallback to string sort if IP is invalid
+            devices.sort(key=lambda x: x["ip"])
+
+        table = Table(title=f"Network Discovery Results ({subnet})", show_lines=True)
+        table.add_column("Hostname", style="blue")
+        table.add_column("IP Address", style="cyan")
+        table.add_column("MAC Address", style="magenta")
+        table.add_column("Vendor", style="green")
+
+        for device in devices:
+            table.add_row(device["hostname"], device["ip"], device["mac"], device["vendor"])
+
+        console.print(table)
+    except Exception as e:
+        console.error(f"Network discovery failed: {e}")
+
+@discover_group.command(name="usb")
+def discover_usb():
+    """
+    Discover USB devices connected to the Pi.
+    """
+    from cloudmesh.ai.pi.findusb import find_usb_devices
+    try:
+        devices = find_usb_devices()
+        if not devices:
+            console.print("No USB devices discovered.")
+            return
+
+        table = Table(title="USB Device Discovery Results", show_lines=True)
+        table.add_column("Device", style="blue")
+        table.add_column("Vendor ID", style="cyan")
+        table.add_column("Product ID", style="magenta")
+        table.add_column("Serial", style="green")
+
+        for dev in devices:
+            table.add_row(
+                dev.get("product", "Unknown"),
+                dev.get("idVendor", "Unknown"),
+                dev.get("idProduct", "Unknown"),
+                dev.get("serial", "Unknown")
+            )
+        console.print(table)
+    except Exception as e:
+        console.error(f"USB discovery failed: {e}")
 
 @pi_group.command(name="reset-burn")
 def reset_burn_cmd():

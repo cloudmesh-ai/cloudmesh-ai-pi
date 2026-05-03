@@ -1,150 +1,201 @@
-# Cloudmesh AI Pi Burner
+# OpenClaw Pi Deployment Manual
 
-The **Cloudmesh AI Pi Burner** is a deployment tool designed to automate the creation of secure, optimized Raspberry Pi environments specifically for **OpenClaw**. 
+This system provides a production-grade pipeline for flashing, configuring, and hardening Raspberry Pi nodes for the OpenClaw cluster.
 
-Instead of manually flashing an image and then SSHing into the device to perform tedious configuration, this tool handles the entire pipeline: from OS flashing and SSH key injection to kernel memory optimization and swap space expansion.
-
----
-
-## 🚀 Quickstart Guide
-
-Get your OpenClaw node ready in minutes:
-
-1.  **Install the tool**:
-    ```bash
-    cd cloudmesh-ai-pi
-    pip install -e .
-    ```
-
-2.  **Prepare your SSH Key**:
-    Ensure you have a public SSH key (e.g., `~/.ssh/id_ed25519.pub`).
-
-3.  **Run the Burner**:
-    ```bash
-    cme pi burn --name claw-node-01 --user admin --key ~/.ssh/id_ed25519.pub
-    ```
-    *Follow the on-screen prompts to unplug/plug your USB drive and set the system password.*
+## Table of Contents
+- Overview
+- Prerequisites
+- Deployment Workflow
+- Quick Start: Single Node
+- Advanced: Cluster Batch Deployment
+- Configuration Reference
+- Specialized Features
+- Post-Burn Installation
+- Production Hardening Details
+- Management and Maintenance
 
 ---
 
-## 📋 Prerequisites
+## Overview
+The deployment process is split into two distinct phases to ensure maximum reliability and security:
 
-### Hardware
-- A Raspberry Pi (compatible with 64-bit OS).
-- A USB SSD or SD Card.
-- A host machine running **macOS** or **Linux**.
-
-### Software
-- **Python 3.8+**
-- **Raspberry Pi Imager CLI**: The tool relies on the official RPi Imager CLI for flashing.
-    - **macOS**: Install via the official `.dmg` from [raspberrypi.com/software](https://www.raspberrypi.com/software/).
-    - **Linux**: Install via the official repository or download the CLI tool.
+1. Burn Phase (Host Machine): Flashes the OS, injects SSH keys, and configures basic identity.
+2. Install Phase (On the Pi): Applies performance tweaks, security hardening, and installs the OpenClaw agent.
 
 ---
 
-## 🛠 Installation
+## Prerequisites
+- Host OS: Linux (Required for low-level disk access and rpi-imager CLI).
+- Hardware: 
+  - Raspberry Pi (3, 4, or 5).
+  - SD Cards or USB SSDs.
+  - (Optional) USB Hub for batch burning.
+- Software: 
+  - Raspberry Pi Imager (v2.0.7+ for CLI support).
+  - cmc CLI tool installed.
 
-Clone the repository and install it in editable mode:
+---
+
+## Deployment Workflow
+The recommended path for a successful cluster deployment is:
+1. Create a "Golden Node" (Single Node Burn) to verify your SSH keys and image.
+2. Boot the Golden Node and run the `install` command to verify hardening.
+3. Define your cluster in a YAML file using the `range` and `prefix` features.
+4. Use the Batch Burn process with a USB hub to flash all remaining nodes.
+5. Boot each node and run the `install` command.
+
+---
+
+## Quick Start: Single Node
+Before deploying a full cluster, create a "Golden Node" as your baseline.
 
 ```bash
-git clone <repository-url>
-cd cloudmesh-ai-pi
-pip install -e .
+cmc pi burn --name node-01 --user admin --key ~/.ssh/id_rsa.pub
 ```
+
+The tool will detect the USB drive, flash the official Raspberry Pi OS Lite, inject your SSH key, and set the hostname.
 
 ---
 
-## 📖 User Manual
+## Advanced: Cluster Batch Deployment
+Use a YAML configuration file to manage large-scale deployments efficiently.
 
-### The `pi burn` Command
-
-The primary command is `cme pi burn`. It can be used in three different ways:
-
-#### 1. Direct Command Line Arguments
-Best for quick deployments.
-```bash
-cme pi burn --name <hostname> --user <username> --key <path_to_pub_key>
-```
-
-#### 2. Using a Configuration File
-Best for standardized deployments across multiple nodes.
-```bash
-cme pi burn --config config.yaml
-```
-
-**Example `config.yaml`**:
+### YAML Configuration Example
+Example `cluster.yaml`:
 ```yaml
-name: "claw-node-01"
-user: "admin"
-key: "~/.ssh/id_ed25519.pub"
+defaults:
+  prefix: "openclaw"
+  range: "00-05,08,10-12"
+  username: "admin"
+  key_path: "~/.ssh/id_rsa.pub"
+  image: "raspios_lite_arm64"
+  install_docker: false # Optional: Install Docker Engine (default: false)
+
+nodes:
+  node-{range}:
+    hostname: "{prefix}-{range}"
+    network:
+      static_ip: true
+      address: "192.168.1.100" # Note: Static IPs must be unique per node
+      gateway: "192.168.1.1"
+      dns: "8.8.8.8 1.1.1.1"
 ```
 
-#### 3. Interactive Mode
-If you omit the required arguments, the tool will guide you through the process:
+### Batch Burning Workflow
+1. Plug in a USB hub with multiple SD cards.
+2. Run the burn command:
+   ```bash
+   cmc pi burn --config cluster.yaml
+   ```
+3. The system will expand the range, detect all available cards, and burn them sequentially. If you have more nodes than slots, the system will prompt you to swap cards and continue.
+
+### State Persistence
+Successfully burned nodes are recorded in `~/.config/cloudmesh/ai/pi_burn_state.json`. If the process is interrupted, running the command again will skip already completed nodes.
+
+---
+
+## Configuration Reference
+
+### Global Defaults (`defaults:`)
+| Parameter | Type | Description | Default |
+|-----------|------|-------------|---------|
+| `prefix` | String | Prefix used for `{prefix}` placeholders | `openclaw` |
+| `range` | String | Range of node IDs (e.g., `01-10,15`) | N/A |
+| `username` | String | Default system user for all nodes | `admin` |
+| `key_path` | Path | Path to the public SSH key to inject | N/A |
+| `image` | String | OS image identifier (e.g., `raspios_lite_arm64`) | `raspios_lite_arm64` |
+| `install_docker` | Boolean | Whether to install Docker Engine | `false` |
+
+### Node Overrides (`nodes:`)
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `hostname` | String | Unique hostname for the node. Supports `{prefix}` and `{range}`. |
+| `network` | Object | Network settings (see below). |
+
+### Network Settings (`network:`)
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `static_ip` | Boolean | Enable static IP configuration. |
+| `interface` | String | Network interface (e.g., `eth0`, `wlan0`). Default: `eth0`. |
+| `address` | String | Static IP address in CIDR notation (e.g., `192.168.1.10/24`). |
+| `gateway` | String | Default gateway IP. |
+| `dns` | String | Space-separated list of DNS servers. |
+
+---
+
+## Specialized Features
+
+### Pi 3 Bootstrap (Hybrid Boot)
+For Raspberry Pi 3 nodes that need to boot from either SD or USB:
 ```bash
-cme pi burn
-# The tool will prompt you for hostname, username, and SSH key path.
+cmc pi burn --bootstrap --name node-01 --user admin --key ~/.ssh/id_rsa.pub
 ```
+This modifies `cmdline.txt` to ensure `rootwait` is enabled, facilitating a reliable transition to USB boot.
 
-### Advanced Options
-
-| Option | Description | Default |
-| :--- | :--- | :--- |
-| `--image` | Specify the OS image to flash (e.g., `raspios_lite_arm32`). | `raspios_lite_arm64` |
-| `--script` | Path to a custom `.sh` script to be injected and run on first boot. | Default OpenClaw script |
-
-**Example with custom image and script**:
+### Configuration Visualization
+To verify the resolved configuration (including prefix and range expansion) without flashing:
 ```bash
-cme pi burn --name node-01 --user admin --key ~/.ssh/id_ed25519.pub --image raspios_lite_arm32 --script my_optimizations.sh
+cmc pi burn --config cluster.yaml --node node-01 --dump
 ```
 
 ---
 
-## ⚙️ How it Works (The Workflow)
-
-The tool follows a strict sequence to ensure the drive is correctly identified and optimized:
-
-1.  **Pre-flight Checks**: Verifies the host OS and ensures `rpi-imager` is installed.
-2.  **Device Detection**: 
-    -   Prompts you to **unplug** the drive to take a snapshot of current disks.
-    -   Prompts you to **plug in** the drive and scans for the new hardware ID.
-3.  **Flashing**: Calls the RPi Imager CLI to write the OS, set the hostname, create the user, and inject the SSH key.
-4.  **Optimization**:
-    -   Mounts the boot partition.
-    -   **Cgroups**: Injects `cgroup_enable=memory cgroup_memory=1` into `cmdline.txt` to enable memory limits.
-    -   **Swap**: Injects a setup script to expand swap space to 2GB.
-    -   **OpenClaw**: Injects the one-touch installer script.
-5.  **Cleanup**: Safely ejects the drive and logs the event to `~/.config/cloudmesh/ai/pi_burn_history.json`.
-
----
-
-## ❓ Troubleshooting
-
-**"Raspberry Pi Imager CLI is not installed"**
-Ensure you have installed the official RPi Imager. On macOS, the tool looks for the binary inside `/Applications/Raspberry Pi Imager.app`.
-
-**"Device detection failed"**
-Ensure the drive is properly connected and that you followed the unplug/plug sequence exactly as prompted.
-
-**"SSH key not found"**
-Verify that the path provided to `--key` is the **public** key (`.pub`), not the private key.
-
----
-
-## 🧪 Development
-
-### Running Tests
-The project includes a comprehensive test suite that mocks system calls to verify logic without needing hardware.
+## Post-Burn Installation
+Once the card is flashed and inserted into the Pi, boot the Pi and run the installation command:
 
 ```bash
-# Install test dependencies
-pip install pytest
-
-# Run tests
-pytest tests/test_pi.py
+cmc pi install --name node-01
 ```
 
-### Project Structure
-- `src/cloudmesh/ai/pi/burner.py`: Core logic and `OpenClawBurner` class.
-- `src/cloudmesh/ai/command/pi.py`: CLI interface and `click` command definitions.
-- `tests/`: Unit tests for the burner logic.
+### Converting an Existing Pi
+If you already have a Raspberry Pi running Raspberry Pi OS Lite, you can convert it into an OpenClaw node without re-flashing:
+
+1. SSH into your existing Pi.
+2. Run the installation command:
+   ```bash
+   cmc pi install --name your-node-name
+   ```
+This applies all production hardening and installs the OpenClaw agent.
+
+---
+
+## Production Hardening Details
+The `install` phase applies the following optimizations:
+
+- Performance:
+  - zRAM: Configures 50% RAM compression to reduce disk I/O and protect SD card lifespan.
+  - Cgroups: Optimizes kernel memory cgroups for better container/process isolation.
+- Security:
+  - SSH Lockdown: Disables password authentication and root login.
+  - UFW Firewall: Implements a deny-by-default policy, allowing only SSH and OpenClaw agent traffic.
+- Resilience:
+  - Hardware Watchdog: Enables the Pi's internal watchdog to force a reboot if the system freezes.
+  - Log Management: Limits systemd-journald to 100MB to prevent storage exhaustion.
+  - Time Sync: Ensures system-wide time synchronization via systemd-timesyncd.
+
+---
+
+## Visual Status Indicators (Onboard LEDs)
+
+The installer uses the onboard LEDs to provide real-time status feedback during the installation process.
+
+| State | ACT LED | PWR LED | Visual Effect | Meaning |
+| :--- | :--- | :--- | :--- | :--- |
+| **Installing** | Rapid Flicker | Solid ON | Heartbeat | Active and progressing |
+| **Rebooting** | Alternating | Alternating | Siren | Rebooting in 5 seconds |
+| **Success** | Solid OFF | Solid ON | Static | Installation complete; Ready for use |
+| **Fault** | Solid ON | Solid ON | Solid Block | Error: Manual check required |
+
+---
+
+## Management and Maintenance
+
+### Resetting Burn State
+To clear the record of completed nodes and start a cluster burn from scratch:
+```bash
+cmc pi reset-burn
+```
+
+### Troubleshooting
+- Device not detected: Ensure you are running on Linux and have the latest Raspberry Pi Imager installed.
+- SSH Connection failed: Verify that the public key provided during the burn phase matches the private key used for connection.

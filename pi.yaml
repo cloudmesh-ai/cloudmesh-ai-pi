@@ -1,0 +1,5 @@
+name: "claw"
+user: "admin"
+key: "~/.ssh/id_rsa.pub"
+image: "raspios_lite_arm64"
+monitor: "wavelink"

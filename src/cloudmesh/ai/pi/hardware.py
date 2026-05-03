@@ -1,0 +1,89 @@
+import os
+import socket
+import platform
+
+
+class Hardware(object):
+
+    @staticmethod
+    def is_pi():
+        """
+        Checks if its called on a PI
+
+        :return: returns true if this is called on a Pi
+        :rtype: bool
+        """
+        # return os.uname()[4][:3] == 'arm' and 'Raspberry' in Hardware.model()
+        return platform.uname()[4][:3] == 'arm' and 'Raspberry' in Hardware.model()
+
+    @staticmethod
+    def get_mac(interface='eth0'):
+        """
+        Get the mac address
+
+        :param interface: the network interface name
+        :type interface: str
+        :return: mac address
+        :rtype: str
+        """
+        # noinspection PyBroadException
+        try:
+            address = open(f'/sys/class/net/{interface}/address').read()
+        except Exception as e:  # noqa: F841
+            address = "00:00:00:00:00:00"
+        return address[0:17]
+
+    @staticmethod
+    def get_ethernet():
+        """
+        TODO: describe
+
+        :return:
+        :rtype:
+        """
+        interface = None
+        # noinspection PyBroadException
+        try:
+            for root, dirs, files in os.walk('/sys/class/net'):
+                for directory in dirs:
+                    if directory[:3] == 'enx' or directory[:3] == 'eth':
+                        interface = directory
+        except Exception as e:  # noqa: F841
+            interface = "None"
+        return interface
+
+    @staticmethod
+    def model():
+        """
+        TODO: describe
+
+        :return:
+        :rtype:
+        """
+        # noinspection PyBroadException
+        try:
+            model_str = open('/sys/firmware/devicetree/base/model').read()
+        except Exception as e:  # noqa: F841
+            model_str = "unkown"
+
+        return model_str
+
+    @staticmethod
+    def hostname():
+        """
+        The hostname
+
+        :return: the hostname
+        :rtype: str
+        """
+        return socket.gethostname()
+
+    @staticmethod
+    def fqdn():
+        """
+        TODO: describe
+
+        :return:
+        :rtype:
+        """
+        return socket.getfqdn()

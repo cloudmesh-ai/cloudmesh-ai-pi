@@ -152,6 +152,11 @@ class RaspbianFinder(USBFinderBase):
         """Maps a block device to a physical USB slot (1-4) on Raspberry Pi."""
         try:
             dev_name = disk_id.replace("/dev/", "")
+            # Handle partitions (e.g., sda1 -> sda)
+            match = re.match(r'^([a-z]+)\d*$', dev_name)
+            if match:
+                dev_name = match.group(1)
+            
             sys_path = f"/sys/block/{dev_name}/device"
             
             # We need the full path to find the port number
@@ -162,14 +167,26 @@ class RaspbianFinder(USBFinderBase):
             full_path = subprocess.check_output(["readlink", "-f", sys_path], text=True)
             
             # Look for the pattern X-Y.Z where Z is the port
-            # We look for the last occurrence of this pattern before the 'host' or 'target' parts
             matches = re.findall(r'(\d+-\d+\.(\d+))', full_path)
             if matches:
-                # The last match before the device itself is usually the physical port
                 last_match = matches[-1]
                 port = int(last_match[1])
                 if 1 <= port <= 4:
                     return port
+        except Exception:
+            pass
+        return 0
+
+    def get_boot_slot(self) -> int:
+        """Identifies which USB slot is used for the current boot device."""
+        try:
+            # Find the device mounted at /
+            with open("/proc/mounts", "r") as f:
+                for line in f:
+                    parts = line.split()
+                    if len(parts) > 1 and parts[1] == "/":
+                        boot_dev = parts[0]
+                        return self.get_usb_slot(boot_dev)
         except Exception:
             pass
         return 0

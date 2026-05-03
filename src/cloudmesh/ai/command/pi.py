@@ -218,7 +218,7 @@ def discover_usb():
             console.print("[dim]Could not determine git commit hash[/dim]")
 
         from cloudmesh.ai.pi.findusb import find_usb_devices
-        devices, slot_map = find_usb_devices()
+        devices, slot_map, boot_slot = find_usb_devices()
         if not devices:
             console.print("No USB devices discovered.")
             return
@@ -263,7 +263,13 @@ def discover_usb():
             
             for slot in range(1, 5):
                 dev_name = slot_map.get(slot, "Empty")
-                console.print(f"Slot {slot}: {dev_name}")
+                boot_marker = " [BOOT]" if slot == boot_slot else ""
+                console.print(f"Slot {slot}: {dev_name}{boot_marker}")
+            
+            if boot_slot > 0:
+                console.print(f"\n[bold green]Current OS is booting from Slot {boot_slot}[/bold green]")
+            else:
+                console.print(f"\n[dim]Boot device not found in USB slots (may be SD card)[/dim]")
 
     except Exception as e:
         console.error(f"USB discovery failed: {e}")

@@ -7,6 +7,17 @@ from typing import List, Dict, Any, Tuple
 from cloudmesh.ai.pi.darwin_finder import DarwinFinder
 from cloudmesh.ai.pi.raspbian_finder import RaspbianFinder
 
+class USBFinder:
+    """
+    Backward compatibility wrapper for the new finder logic.
+    """
+    def __init__(self):
+        pass
+
+    def find_devices(self):
+        devices, _ = find_usb_devices()
+        return devices
+
 def find_usb_devices() -> Tuple[List[Dict[str, Any]], Dict[int, str]]:
     """
     Convenience function to find external USB devices.

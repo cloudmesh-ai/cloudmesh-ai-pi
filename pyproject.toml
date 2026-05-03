@@ -24,4 +24,4 @@ pi = "command.pi:register"
 
 [tool.setuptools.packages.find]
 where = ["src"]
-include = ["command*"]
+include = ["cloudmesh*"]

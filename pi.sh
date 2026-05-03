@@ -31,7 +31,7 @@ mkdir -p "$WORKSPACE"
 cd "$WORKSPACE"
 
 # 3. Clone Repositories
-REPOS="https://github.com/cloudmesh-ai/cloudmesh-ai-common.git https://github.com/cloudmesh-ai/cloudmesh-ai-pi.git"
+REPOS="https://github.com/cloudmesh-ai/cloudmesh-ai-cmc.git https://github.com/cloudmesh-ai/cloudmesh-ai-common.git https://github.com/cloudmesh-ai/cloudmesh-ai-pi.git"
 
 for repo in $REPOS; do
     repo_name=$(basename "$repo" .git)
@@ -48,7 +48,7 @@ done
 echo "Installing Cloudmesh AI components from source..."
 
 # Install repositories in order of dependency
-for repo_dir in cloudmesh-ai-common cloudmesh-ai-pi; do
+for repo_dir in cloudmesh-ai-cmc cloudmesh-ai-common cloudmesh-ai-pi; do
     if [ -d "$repo_dir" ]; then
         echo "Installing $repo_dir..."
         cd "$repo_dir"

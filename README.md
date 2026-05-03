@@ -142,10 +142,16 @@ cmc pi burn --config cluster.yaml --node node-01 --dump
 ---
 
 ## Quick Installation (Bootstrap)
-If you are on a vanilla Raspberry Pi OS image and need to install the `cmc` toolset quickly (even if `git` is not yet installed), you can use the bootstrap script:
+If you are on a vanilla Raspberry Pi OS image and need to install the `cmc` toolset quickly (even if `git` is not yet installed), you can use the bootstrap script.
 
+**Recommended (via GitHub Pages):**
 ```bash
 curl -sSL https://cloudmesh-ai.github.io/pi.sh | sh
+```
+
+**Alternative (via Raw GitHub):**
+```bash
+curl -sSL https://github.com/cloudmesh/cloudmesh-ai-pi/raw/main/pi.sh | sh
 ```
 
 This script will:

@@ -54,6 +54,10 @@ class RaspbianFinder(USBFinderBase):
                 
                 info["protocol"] = dev.get("tran") or "Unknown"
                 info["mountpoint"] = dev.get("mountpoint") or "Unknown"
+                
+                # Try to get Label and UUID from lsblk JSON if available
+                info["label"] = dev.get("label") or info["label"]
+                info["uuid"] = dev.get("uuid") or info["uuid"]
             else:
                 # Fallback if JSON doesn't return the device
                 return info

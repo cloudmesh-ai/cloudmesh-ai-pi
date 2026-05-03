@@ -192,7 +192,8 @@ class USBFinder:
 def find_usb_devices():
     """
     Convenience function to find external USB devices.
-    Returns a set of device paths.
+    Returns a list of device info dictionaries.
     """
     finder = USBFinder()
-    return finder.get_external_drives()
+    drives = finder.get_external_drives()
+    return [finder.get_device_info(d) for d in drives]

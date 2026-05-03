@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # Bootstrap script to install cloudmesh-ai-pi on a vanilla Raspberry Pi OS
 # Usage: curl -sSL https://cloudmesh-ai.github.io/pi.sh | sh

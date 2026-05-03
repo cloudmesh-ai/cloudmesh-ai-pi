@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cloudmesh-ai-pi"
+
+dynamic = ["version"]
+description = "Extension pi created by CME"
+license = "Apache-2.0"
+dependencies = [
+    "cloudmesh-ai-cmc",
+    "click",
+    "rich",
+    "pytest",
+    "cloudmesh-ai-common",
+    "PyYAML",
+]
+[tool.setuptools.dynamic]
+version = {file = "VERSION"}
+
+[project.entry-points."cloudmesh.ai.command"]
+pi = "command.pi:register"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["command*"]

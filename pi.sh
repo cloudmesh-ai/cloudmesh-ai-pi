@@ -45,12 +45,20 @@ for repo in $REPOS; do
 done
 
 # 4. Install using pip
-echo "Installing cloudmesh-ai-pi from source..."
-cd cloudmesh-ai-pi
+echo "Installing Cloudmesh AI components from source..."
 
-# Install dependencies and the package
-# Using --break-system-packages for global install on newer Debian/Pi OS versions
-sudo pip3 install . --break-system-packages || sudo pip3 install .
+# Install repositories in order of dependency
+for repo_dir in cloudmesh-ai-common cloudmesh-ai-pi; do
+    if [ -d "$repo_dir" ]; then
+        echo "Installing $repo_dir..."
+        cd "$repo_dir"
+        # Using --break-system-packages for global install on newer Debian/Pi OS versions
+        sudo pip3 install . --break-system-packages || sudo pip3 install .
+        cd ..
+    else
+        echo "Error: $repo_dir directory not found. Skipping installation."
+    fi
+done
 
 echo "--- Installation Complete ---"
 echo "You can now use the 'cmc pi' commands."

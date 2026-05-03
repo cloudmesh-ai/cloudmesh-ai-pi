@@ -225,17 +225,19 @@ def discover_usb():
 
         table = Table(title="USB Device Discovery Results", show_lines=True)
         table.add_column("Device", style="blue")
+        table.add_column("Slot", style="yellow")
         table.add_column("USB ID", style="cyan")
         table.add_column("Label", style="yellow")
         table.add_column("Vendor", style="green")
         table.add_column("Product", style="magenta")
-        table.add_column("Size")
+        table.add_column("Size", justify="right")
         table.add_column("Mountpoint", style="magenta")
         table.add_column("Bus/Dev", style="dim")
 
         for dev in devices:
             table.add_row(
                 dev.get("model", "Unknown"),
+                dev.get("slot", "Unknown"),
                 dev.get("usb_id", "Unknown"),
                 dev.get("label", "Unknown"),
                 dev.get("vendor", "Unknown"),

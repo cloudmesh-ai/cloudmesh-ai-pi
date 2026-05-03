@@ -192,6 +192,25 @@ class USBFinder:
                         info["usb_id"] = f"{info['idVendor']}:{info['idProduct']}"
                 except Exception as e:
                     logger.debug(f"udevadm failed for {disk_id}: {e}")
+
+                # Fallback to lsusb if udevadm didn't find the USB ID
+                if info["usb_id"] == "Unknown":
+                    try:
+                        # Find the device in lsusb output by matching the device path or model
+                        lsusb_output = subprocess.check_output(["lsusb", "-v"], text=True)
+                        # This is a complex parse, but we look for the device that matches our disk_id
+                        # A simpler way is to use lsusb -t to find the bus/dev and then match
+                        # For now, let's try to find the vendor/product if we have a model name
+                        if info["model"] != "Unknown":
+                            for line in lsusb_output.splitlines():
+                                if info["model"] in line and "id" in line.lower():
+                                    match = re.search(r"id\s+([0-9a-fA-F]{4}):([0-9a-fA-F]{4})", line)
+                                    if match:
+                                        info["idVendor"], info["idProduct"] = match.groups()
+                                        info["usb_id"] = f"{info['idVendor']}:{info['idProduct']}"
+                                        break
+                    except Exception as e:
+                        logger.debug(f"lsusb fallback failed for {disk_id}: {e}")
         except Exception as e:
             logger.debug(f"Error fetching detailed device info for {disk_id}: {e}")
         
@@ -202,6 +221,7 @@ def find_usb_devices():
     Convenience function to find external USB devices.
     Returns a list of device info dictionaries.
     """
+    print("DEBUG: Loading find_usb_devices from local source")
     finder = USBFinder()
     drives = finder.get_external_drives()
     return [finder.get_device_info(d) for d in drives]

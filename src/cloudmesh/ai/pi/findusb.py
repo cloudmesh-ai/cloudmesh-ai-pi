@@ -60,17 +60,8 @@ class USBFinder:
             except Exception as e:
                 logger.error(f"Error detecting drives on Linux: {e}")
 
-        # Filter out drives > 512GB
-        filtered_drives = set()
-        for d in candidates:
-            info = self.get_device_info(d)
-            size_bytes = info.get("size_bytes", 0)
-            if size_bytes > 0 and size_bytes <= (512 * 1024**3):
-                filtered_drives.add(d)
-            elif size_bytes == 0: # Keep if we couldn't determine size to be safe
-                filtered_drives.add(d)
-        
-        return filtered_drives
+        # Return all candidates to avoid filtering issues
+        return candidates
 
     def get_device_info(self, disk_id: str) -> Dict[str, Any]:
         """Retrieves detailed metadata about the disk, including USB vendor and product strings."""
@@ -83,7 +74,10 @@ class USBFinder:
             "protocol": "Unknown",
             "type": "Unknown",
             "vendor": "Unknown",
-            "product": "Unknown"
+            "product": "Unknown",
+            "idVendor": "Unknown",
+            "idProduct": "Unknown",
+            "serial": "Unknown"
         }
         try:
             if self.system == "Darwin":
@@ -156,34 +150,39 @@ class USBFinder:
                     info["model"] = f"{info['protocol']} Storage Device"
 
             else:
-                # Linux: Use lsblk for basic info and /sys/class/block for USB strings
-                output = subprocess.check_output(["lsblk", "-dno", "MODEL,SIZE,TRAN", disk_id], text=True)
-                parts = output.strip().split()
-                if len(parts) >= 1: info["model"] = parts[0]
-                if len(parts) >= 2: 
-                    size_str = parts[1]
-                    info["size"] = size_str
-                    match = re.match(r"(\d+)([GTMK])", size_str)
-                    if match:
-                        val, unit = match.groups()
-                        mult = {"K": 1024, "M": 1024**2, "G": 1024**3, "T": 1024**4}
-                        info["size_bytes"] = int(val) * mult.get(unit, 1)
-                if len(parts) >= 3: info["protocol"] = parts[2]
-                info["type"] = "USB/External" if info["protocol"] == "usb" else "Block Device"
-                
-                # Try to get USB vendor/product from sysfs
-                dev_name = disk_id.replace("/dev/", "")
+                # Linux: Use lsblk for basic info
                 try:
-                    # Find the usb device associated with this block device
-                    # This is a simplification; in reality, we'd follow the symlinks in /sys/block/sdX/device
-                    usb_path = f"/sys/block/{dev_name}/device"
-                    if os.path.exists(usb_path):
-                        with open(os.path.join(usb_path, "vendor"), "r") as f:
-                            info["vendor"] = f.read().strip()
-                        with open(os.path.join(usb_path, "product"), "r") as f:
-                            info["product"] = f.read().strip()
-                except Exception:
-                    pass
+                    output = subprocess.check_output(["lsblk", "-dno", "MODEL,SIZE,TRAN", disk_id], text=True)
+                    parts = output.strip().split()
+                    if len(parts) >= 1: info["model"] = parts[0]
+                    if len(parts) >= 2: 
+                        size_str = parts[1]
+                        info["size"] = size_str
+                        match = re.match(r"(\d+)([GTMK])", size_str)
+                        if match:
+                            val, unit = match.groups()
+                            mult = {"K": 1024, "M": 1024**2, "G": 1024**3, "T": 1024**4}
+                            info["size_bytes"] = int(val) * mult.get(unit, 1)
+                    if len(parts) >= 3: info["protocol"] = parts[2]
+                    info["type"] = "USB/External" if info["protocol"] == "usb" else "Block Device"
+                except Exception as e:
+                    logger.debug(f"lsblk failed for {disk_id}: {e}")
+
+                # Use udevadm for robust USB metadata extraction
+                try:
+                    udev_output = subprocess.check_output(["udevadm", "info", "--query=all", "--name=" + disk_id], text=True)
+                    for line in udev_output.splitlines():
+                        if "=" in line:
+                            key, val = line.split("=", 1)
+                            key = key.strip()
+                            val = val.strip()
+                            if key == "ID_VENDOR_ID": info["idVendor"] = val
+                            elif key == "ID_MODEL_ID": info["idProduct"] = val
+                            elif key == "ID_SERIAL_SHORT": info["serial"] = val
+                            elif key == "ID_VENDOR": info["vendor"] = val
+                            elif key == "ID_MODEL": info["product"] = val
+                except Exception as e:
+                    logger.debug(f"udevadm failed for {disk_id}: {e}")
         except Exception as e:
             logger.debug(f"Error fetching detailed device info for {disk_id}: {e}")
         

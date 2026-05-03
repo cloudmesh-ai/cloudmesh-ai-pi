@@ -30,20 +30,33 @@ class RaspbianFinder(USBFinderBase):
             "label": "Unknown", "uuid": "Unknown"
         }
         try:
-            # 1. Robust size and mountpoint using lsblk -b (bytes)
-            # We use -n (no headings) and -o (output columns)
-            output = subprocess.check_output(["lsblk", "-bno", "MODEL,SIZE,TRAN,MOUNTPOINT", disk_id], text=True)
-            parts = output.strip().split()
-            if len(parts) >= 1: info["model"] = parts[0]
-            if len(parts) >= 2: 
-                try:
-                    bytes_size = int(parts[1])
-                    info["size_bytes"] = bytes_size
-                    info["size"] = f"{bytes_size // (1024**3)} GB" if bytes_size >= 1024**3 else f"{bytes_size // (1024**2)} MB"
-                except ValueError:
-                    info["size"] = parts[1]
-            if len(parts) >= 3: info["protocol"] = parts[2]
-            if len(parts) >= 4: info["mountpoint"] = parts[3]
+            import json
+            # 1. Use lsblk --json for reliable parsing
+            # -b for bytes, -o for specific columns
+            output = subprocess.check_output(
+                ["lsblk", "--json", "-b", "-o", "MODEL,SIZE,TRAN,MOUNTPOINT", disk_id], 
+                text=True
+            )
+            data = json.loads(output)
+            
+            if "blockdevices" in data and len(data["blockdevices"]) > 0:
+                dev = data["blockdevices"][0]
+                info["model"] = dev.get("model") or "Unknown"
+                
+                bytes_size = dev.get("size")
+                if bytes_size:
+                    try:
+                        bytes_size = int(bytes_size)
+                        info["size_bytes"] = bytes_size
+                        info["size"] = f"{bytes_size // (1024**3)} GB" if bytes_size >= 1024**3 else f"{bytes_size // (1024**2)} MB"
+                    except ValueError:
+                        info["size"] = str(bytes_size)
+                
+                info["protocol"] = dev.get("tran") or "Unknown"
+                info["mountpoint"] = dev.get("mountpoint") or "Unknown"
+            else:
+                # Fallback if JSON doesn't return the device
+                return info
             info["type"] = "USB/External" if info["protocol"] == "usb" else "Block Device"
 
             # 2. Use blkid for Label and UUID (requires root usually, but we try)

@@ -9,6 +9,8 @@ import subprocess
 import os
 import textwrap
 import json
+import time
+import shutil
 from typing import List, Optional, Dict, Tuple
 from pathlib import Path
 from cloudmesh.ai.common.logging import get_logger
@@ -372,6 +374,7 @@ class PiInstaller:
                 self._heartbeat_stop.set()
                 self.logger.set_state("fault")
                 self.logger.error(f"Pre-reboot installation failed: {e}")
+                raise
 
         elif phase == "POST_REBOOT":
             self.logger.info("PHASE 2: POST-REBOOT VERIFICATION")
@@ -400,6 +403,7 @@ class PiInstaller:
                 self._heartbeat_stop.set()
                 self.logger.set_state("fault")
                 self.logger.error(f"Post-reboot verification failed: {e}")
+                raise
 
         else:
             console.print("[yellow]Installation already completed.[/yellow]")

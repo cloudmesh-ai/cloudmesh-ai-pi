@@ -15,7 +15,7 @@ install:
 
 # Testing
 test:
-	$(PYTHON) -m pytest tests
+	$(PYTHON) -m pytest -v tests
 
 # Release
 upload:

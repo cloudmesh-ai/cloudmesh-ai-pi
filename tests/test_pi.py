@@ -4,6 +4,7 @@ import os
 import platform
 import threading
 import time
+from cloudmesh.ai.common.io import console, path_expand
 from cloudmesh.ai.pi.burner import OpenClawBurner
 from cloudmesh.ai.pi.led import PiLeds, PiLed
 from cloudmesh.ai.pi.logger import InstallLogger
@@ -84,7 +85,7 @@ class TestPiLeds(unittest.TestCase):
         self.assertTrue(any("led1" in str(cmd) for cmd in calls))
 
 class TestInstallLogger(unittest.TestCase):
-    @patch('cloudmesh.ai.pi.led.PiLeds')
+    @patch('cloudmesh.ai.pi.logger.PiLeds')
     def test_multiplex_logging(self, mock_leds):
         # Mock TTY availability and open calls to prevent real OS interaction
         with patch('os.path.exists', return_value=True), \
@@ -98,14 +99,17 @@ class TestInstallLogger(unittest.TestCase):
             
             # Verify file write (via sudo echo)
             mock_run.assert_called()
-            self.assertIn("INFO", mock_run.call_args[0][0][0])
-            self.assertIn("Test Message", mock_run.call_args[0][0][0])
+            # The command is the 4th element in the list: ["sudo", "sh", "-c", "echo ..."]
+            cmd_string = mock_run.call_args[0][0][3]
+            self.assertIn("INFO", cmd_string)
+            self.assertIn("Test Message", cmd_string)
             
             # Verify TTY write
             mock_file.assert_any_call("/dev/tty1", "a")
 
-    @patch('cloudmesh.ai.pi.led.PiLeds')
-    def test_error_triggers_fault_leds(self, mock_leds):
+    @patch('cloudmesh.ai.pi.logger.subprocess.run')
+    @patch('cloudmesh.ai.pi.logger.PiLeds')
+    def test_error_triggers_fault_leds(self, mock_leds, mock_run):
         with patch('os.path.exists', return_value=False):
             logger = InstallLogger()
             logger.error("Critical Failure")
@@ -115,7 +119,7 @@ class TestInstallLogger(unittest.TestCase):
             mock_leds.return_value.set_led.assert_any_call("pwr", True)
 
 class TestPiInstaller(unittest.TestCase):
-    @patch('cloudmesh.ai.pi.logger.InstallLogger')
+    @patch('cloudmesh.ai.pi.installer.InstallLogger')
     @patch('cloudmesh.ai.pi.led.PiLeds')
     def test_installation_flow(self, mock_leds, mock_logger_cls):
         mock_logger = mock_logger_cls.return_value
@@ -134,7 +138,7 @@ class TestPiInstaller(unittest.TestCase):
             # Verify siren triggered before reboot
             mock_logger.set_state.assert_any_call("siren")
 
-    @patch('cloudmesh.ai.pi.logger.InstallLogger')
+    @patch('cloudmesh.ai.pi.installer.InstallLogger')
     def test_fault_state_on_exception(self, mock_logger_cls):
         mock_logger = mock_logger_cls.return_value
         installer = PiInstaller()

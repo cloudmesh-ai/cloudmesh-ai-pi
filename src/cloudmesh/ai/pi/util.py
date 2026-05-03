@@ -3,7 +3,7 @@ import os
 import platform
 import sys
 
-from cloudmesh.ai.common.console import Console
+from cloudmesh.ai.common.console import Console as console
 from cloudmesh.ai.common.util import readfile
 
 # import mmap

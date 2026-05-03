@@ -1,5 +1,6 @@
 import os
 import datetime
+import subprocess
 from cloudmesh.ai.common.io import console
 from cloudmesh.ai.pi.led import PiLeds
 
@@ -42,7 +43,6 @@ class InstallLogger:
         formatted_msg = f"[{timestamp}] [{level}] {message}\n"
         try:
             # Use sudo to write to /var/log
-            import subprocess
             subprocess.run(["sudo", "sh", "-c", f"echo '{formatted_msg}' >> {self.log_file}"], 
                            check=True, capture_output=True)
         except Exception as e:

@@ -8,7 +8,7 @@ import requests
 import usb as usb_device
 from cloudmesh.ai.common.systeminfo import os_is_mac
 from cloudmesh.ai.common.Tabulate import Printer
-from cloudmesh.ai.common.console import Console
+from cloudmesh.ai.common.console import Console as console
 from cloudmesh.ai.common.sudo import Sudo
 from cloudmesh.ai.common.util import path_expand
 from cloudmesh.ai.common.util import readfile

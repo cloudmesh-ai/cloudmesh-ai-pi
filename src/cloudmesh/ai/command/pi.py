@@ -254,22 +254,36 @@ def discover_usb():
         console.print(table)
 
         if slot_map:
+            from rich.table import Table
+            from rich import box
+
             console.print("\n[bold cyan]USB Slot Map (Physical Layout):[/bold cyan]")
             console.print("[dim](Facing the ports, Ethernet on the right)[/dim]")
-            console.print("  _______________________________________")
-            console.print(" |  [Slot 1]   [Slot 2]  |               |")
-            console.print(" |    ( ) Black   ( ) Blue|   Ethernet    |")
-            console.print(" |    (USB 2.0)   (USB 3.0)|    Port       |")
-            console.print(" |                    |   [=======]     |")
-            console.print(" |    ( ) Black   ( ) Blue|               |")
-            console.print(" |    (USB 2.0)   (USB 3.0)|               |")
-            console.print(" |  [Slot 3]   [Slot 4]  |               |")
-            console.print(" |_______________________|_______________|")
             
-            for slot in range(1, 5):
-                dev_name = slot_map.get(slot, "Empty")
-                boot_marker = " [BOOT]" if slot == boot_slot else ""
-                console.print(f"Slot {slot}: {dev_name}{boot_marker}")
+            layout_table = Table(show_header=False, box=box.ROUNDED, show_edge=True)
+            layout_table.add_column(justify="center", style="black on white") # USB 2.0
+            layout_table.add_column(justify="center", style="blue")           # USB 3.0
+            layout_table.add_column(justify="center", style="cyan")           # Ethernet
+
+            def get_slot_text(slot):
+                name = slot_map.get(slot, "Empty")
+                boot = " [bold green][BOOT][/bold green]" if slot == boot_slot else ""
+                return f"[Slot {slot}]\n{name}{boot}"
+
+            # Row 1: Top ports
+            layout_table.add_row(
+                get_slot_text(1),
+                get_slot_text(2),
+                "[bold]Ethernet[/bold]\n[dim]Port[/dim]"
+            )
+            # Row 2: Bottom ports
+            layout_table.add_row(
+                get_slot_text(3),
+                get_slot_text(4),
+                ""
+            )
+            
+            console.print(layout_table)
             
             if boot_slot > 0:
                 console.print(f"\n[bold green]Current OS is booting from Slot {boot_slot}[/bold green]")

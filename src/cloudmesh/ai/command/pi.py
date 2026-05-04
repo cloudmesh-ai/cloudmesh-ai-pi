@@ -70,9 +70,9 @@ def pi_group():
     """
     pass
 
-@pi_group.command(name="led")
-@click.argument("led", type=click.Choice(["act", "pwr"], case_sensitive=False))
-@click.argument("state", type=click.Choice(["on", "off"], case_sensitive=False))
+@pi_group.command(name="led-control")
+@click.argument("led")
+@click.argument("state")
 def led_cmd(led, state):
     """
     Control the onboard board LEDs (ACT or PWR).

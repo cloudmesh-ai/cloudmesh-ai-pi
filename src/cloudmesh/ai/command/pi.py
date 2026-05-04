@@ -165,6 +165,66 @@ def burn_cmd(config, node, name, user, key, image, gui, optimize_only, dump):
                 console.error("GUI mode is not supported for cluster batch burning. Please use single-node mode.")
                 return
 
+            # --- Interactive Batch Burn Workflow ---
+            
+            # 1. USB Discovery and Slot Map
+            from cloudmesh.ai.pi.findusb import find_usb_devices
+            devices, slot_map, boot_slot, candidate_slots = find_usb_devices()
+            
+            # Display the visual slot map (reusing the logic from discover_usb)
+            from rich import box
+            console.print("\n[bold cyan]USB Slot Map (Physical Layout):[/bold cyan]")
+            console.print("[dim](Facing the ports, Ethernet on the right)[/dim]")
+            layout_table = Table(show_header=False, box=box.ROUNDED, show_edge=True, show_lines=True)
+            layout_table.add_column(justify="center", style="white on black")
+            layout_table.add_column(justify="center", style="white on blue")
+            layout_table.add_column(justify="center", style="cyan")
+
+            def get_slot_text(slot):
+                name = slot_map.get(slot, "Empty")
+                boot = " [bold green][BOOT][/bold green]" if slot == boot_slot else ""
+                speed = ""
+                size = ""
+                for dev in devices:
+                    if str(dev.get("slot")) == str(slot):
+                        speed = f"({dev.get('speed', 'Unknown')})"
+                        size = f" {dev.get('size', 'Unknown')}"
+                        break
+                return f"[Slot {slot}]\n{name}{boot}\n{speed}{size}"
+
+            layout_table.add_row(get_slot_text(4), get_slot_text(2), "[bold]Ethernet[/bold]\n[dim]Port[/dim]")
+            layout_table.add_row(get_slot_text(5), get_slot_text(3), "")
+            console.print(layout_table)
+
+            # 2. Slot Selection
+            if not candidate_slots:
+                console.error("No available USB slots found (excluding boot slot). Aborting.")
+                return
+
+            slots_str = ", ".join(map(str, candidate_slots))
+            if not click.confirm(f"Would you like to burn on the slots [{slots_str}]?"):
+                console.print("Aborted by user.")
+                return
+
+            # 3. Data Destruction Warning
+            console.print("\n[bold red]!!! WARNING !!![/bold red]")
+            console.print("[bold red]This will DESTROY ALL DATA on the USB sticks in the selected slots![/bold red]")
+            if not click.confirm("Are you absolutely sure you want to proceed?"):
+                console.print("Aborted by user.")
+                return
+
+            # 4. Config Review
+            console.banner("CONFIG REVIEW", "The following settings will be applied to all nodes:")
+            # Use a temporary burner to dump the resolved config for the first node as a sample
+            sample_node = cluster_burner._get_all_nodes()[0]
+            sample_burner = OpenClawBurner("tmp", "tmp", "tmp", image=image, config_file=config, node_name=sample_node)
+            sample_burner.dump_config()
+            
+            if not click.confirm("\nThis is what I will burn. Is this ok?"):
+                console.print("Aborted by user.")
+                return
+
+            # 5. Batch Processing Loop
             pwd = getpass.getpass("Set password for Pi users: ")
             cluster_burner.run(pwd)
             return

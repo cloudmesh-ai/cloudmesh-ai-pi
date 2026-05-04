@@ -302,6 +302,36 @@ def discover_usb():
     except Exception as e:
         console.error(f"USB discovery failed: {e}")
 
+@pi_group.command(name="led")
+@click.argument("led", type=click.Choice(["act", "pwr"], case_sensitive=False))
+@click.argument("state", type=click.Choice(["on", "off"], case_sensitive=False))
+def led_cmd(led, state):
+    """
+    Control the onboard board LEDs (ACT or PWR).
+    """
+    import subprocess
+    
+    led_map = {
+        "act": "ACT",
+        "pwr": "PWR"
+    }
+    
+    led_name = led_map[led.lower()]
+    brightness = "1" if state.lower() == "on" else "0"
+    led_path = f"/sys/class/leds/{led_name}"
+    
+    try:
+        # 1. Set trigger to 'none' to allow manual brightness control
+        subprocess.run(["sudo", "sh", "-c", f"echo none > {led_path}/trigger"], check=True)
+        # 2. Set brightness
+        subprocess.run(["sudo", "sh", "-c", f"echo {brightness} > {led_path}/brightness"], check=True)
+        
+        console.banner("SUCCESS", f"Board LED {led_name} set to {state.upper()}")
+    except subprocess.CalledProcessError as e:
+        console.error(f"Failed to control LED {led_name}: {e}")
+    except Exception as e:
+        console.error(f"An error occurred: {e}")
+
 @pi_group.command(name="reset-burn")
 def reset_burn_cmd():
     """

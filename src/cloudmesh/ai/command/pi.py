@@ -231,10 +231,15 @@ def discover_usb():
         table.add_column("Vendor", style="green")
         table.add_column("Product", style="magenta")
         table.add_column("Size", justify="right")
-        table.add_column("Mountpoint", style="magenta")
+        table.add_column("Function", style="yellow")
         table.add_column("Bus/Dev", style="dim")
 
         for dev in devices:
+            # Determine function: [BOOT] if it's the boot slot, otherwise mountpoint
+            function = dev.get("mountpoint", "Unknown")
+            if dev.get("slot") == str(boot_slot) and boot_slot > 0:
+                function = "[BOOT]"
+
             table.add_row(
                 dev.get("model", "Unknown"),
                 dev.get("slot", "Unknown"),
@@ -243,7 +248,7 @@ def discover_usb():
                 dev.get("vendor", "Unknown"),
                 dev.get("product", "Unknown"),
                 dev.get("size", "Unknown"),
-                dev.get("mountpoint", "Unknown"),
+                function,
                 f"{dev.get('bus', 'U')}/{dev.get('device', 'U')}"
             )
         console.print(table)

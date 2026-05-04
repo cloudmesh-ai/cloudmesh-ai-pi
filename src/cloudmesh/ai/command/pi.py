@@ -216,8 +216,9 @@ def burn_cmd(config, node, name, user, key, image, gui, optimize_only, dump):
             # 4. Config Review
             console.banner("CONFIG REVIEW", "The following settings will be applied to all nodes:")
             # Use a temporary burner to dump the resolved config for the first node as a sample
+            # Pass None for hostname, username, and key_path to ensure they are resolved from the config file
             sample_node = cluster_burner._get_all_nodes()[0]
-            sample_burner = OpenClawBurner("tmp", "tmp", "tmp", image=image, config_file=config, node_name=sample_node)
+            sample_burner = OpenClawBurner(None, None, None, image=image, config_file=config, node_name=sample_node)
             sample_burner.dump_config()
             
             if not click.confirm("\nThis is what I will burn. Is this ok?"):

@@ -255,11 +255,14 @@ def discover_usb():
 
         if slot_map:
             console.print("\n[bold cyan]USB Slot Map (Physical Layout):[/bold cyan]")
+            console.print("[dim](Facing the ports, Ethernet on the right)[/dim]")
             console.print("  _______________________________________")
             console.print(" |  [Slot 1]   [Slot 2]  |               |")
             console.print(" |    ( ) Blue    ( ) Blue|   Ethernet    |")
-            console.print(" |                    |    Port       |")
-            console.print(" |    ( ) Black   ( ) Black|   [=======]     |")
+            console.print(" |    (USB 3.0)   (USB 3.0)|    Port       |")
+            console.print(" |                    |   [=======]     |")
+            console.print(" |    ( ) Black   ( ) Black|               |")
+            console.print(" |    (USB 2.0)   (USB 2.0)|               |")
             console.print(" |  [Slot 3]   [Slot 4]  |               |")
             console.print(" |_______________________|_______________|")
             

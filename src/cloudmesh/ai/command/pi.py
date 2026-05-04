@@ -255,16 +255,13 @@ def discover_usb():
 
         if slot_map:
             console.print("\n[bold cyan]USB Slot Map (Physical Layout):[/bold cyan]")
-            console.print("  _______________________")
-            console.print(" |  [1]       [2]       |")
-            console.print(" |  Slot 1    Slot 2    |")
-            console.print(" |  ( )       ( )       |")
-            console.print(" |  |       |           |")
-            console.print(" |  |       |           |")
-            console.print(" |  [3]       [4]       |")
-            console.print(" |  Slot 3    Slot 4    |")
-            console.print(" |  ( )       ( )       |")
-            console.print(" |_______________________|")
+            console.print("  _______________________________________")
+            console.print(" |  [Slot 1]   [Slot 2]  |               |")
+            console.print(" |    ( ) Blue    ( ) Blue|   Ethernet    |")
+            console.print(" |                    |    Port       |")
+            console.print(" |    ( ) Black   ( ) Black|   [=======]     |")
+            console.print(" |  [Slot 3]   [Slot 4]  |               |")
+            console.print(" |_______________________|_______________|")
             
             for slot in range(1, 5):
                 dev_name = slot_map.get(slot, "Empty")

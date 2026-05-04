@@ -18,10 +18,10 @@ class USBFinder:
         devices, _ = find_usb_devices()
         return devices
 
-def find_usb_devices() -> Tuple[List[Dict[str, Any]], Dict[int, str], int]:
+def find_usb_devices() -> Tuple[List[Dict[str, Any]], Dict[int, str], int, List[int]]:
     """
     Convenience function to find external USB devices.
-    Returns a tuple: (list of device info, slot_map, boot_slot)
+    Returns a tuple: (list of device info, slot_map, boot_slot, candidate_slots)
     """
     system = platform.system()
     finder = DarwinFinder() if system == "Darwin" else RaspbianFinder()
@@ -37,5 +37,8 @@ def find_usb_devices() -> Tuple[List[Dict[str, Any]], Dict[int, str], int]:
             dev["slot"] = str(slot) if slot > 0 else "Unknown"
             if slot > 0:
                 slot_map[slot] = dev["model"]
+    
+    # Candidates for burning are occupied slots that are NOT the boot slot
+    candidate_slots = [slot for slot in slot_map if slot != boot_slot]
                 
-    return devices, slot_map, boot_slot
+    return devices, slot_map, boot_slot, candidate_slots

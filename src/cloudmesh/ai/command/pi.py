@@ -218,7 +218,7 @@ def discover_usb():
             console.print("[dim]Could not determine git commit hash[/dim]")
 
         from cloudmesh.ai.pi.findusb import find_usb_devices
-        devices, slot_map, boot_slot = find_usb_devices()
+        devices, slot_map, boot_slot, candidate_slots = find_usb_devices()
         if not devices:
             console.print("No USB devices discovered.")
             return

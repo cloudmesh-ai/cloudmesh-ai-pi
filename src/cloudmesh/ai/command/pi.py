@@ -259,7 +259,7 @@ def discover_usb():
             console.print("\n[bold cyan]USB Slot Map (Physical Layout):[/bold cyan]")
             console.print("[dim](Facing the ports, Ethernet on the right)[/dim]")
             
-            layout_table = Table(show_header=False, box=box.ROUNDED, show_edge=True)
+            layout_table = Table(show_header=False, box=box.ROUNDED, show_edge=True, show_lines=True)
             layout_table.add_column(justify="center", style="white on black") # USB 2.0
             layout_table.add_column(justify="center", style="white on blue")  # USB 3.0
             layout_table.add_column(justify="center", style="cyan")           # Ethernet

@@ -9,12 +9,22 @@ from cloudmesh.ai.pi.raspbian_finder import RaspbianFinder
 
 class USBFinder:
     """
-    Backward compatibility wrapper for the new finder logic.
+    Wrapper for platform-specific USB discovery logic.
     """
     def __init__(self):
-        pass
+        system = platform.system()
+        self.finder = DarwinFinder() if system == "Darwin" else RaspbianFinder()
+
+    def get_external_drives(self):
+        """Delegate to the platform-specific finder."""
+        return self.finder.get_external_drives()
+
+    def get_device_info(self, disk_id: str):
+        """Delegate to the platform-specific finder."""
+        return self.finder.get_device_info(disk_id)
 
     def find_devices(self):
+        """Backward compatibility method."""
         devices, _ = find_usb_devices()
         return devices
 

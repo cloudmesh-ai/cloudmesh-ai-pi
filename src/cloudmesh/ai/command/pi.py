@@ -70,22 +70,40 @@ def pi_group():
     """
     pass
 
-@pi_group.command(name="led-control")
-@click.argument("led")
-@click.argument("state")
+@pi_group.command(name="led")
+@click.argument("led", type=click.Choice(["act", "pwr", "disk"], case_sensitive=False))
+@click.argument("state", type=click.Choice(["on", "off"], case_sensitive=False))
 def led_cmd(led, state):
     """
-    Control the onboard board LEDs (ACT or PWR).
+    Control the onboard board LEDs (ACT, PWR) or simulate disk activity.
     """
     import subprocess
     
+    led = led.lower()
+    state = state.lower()
+
+    if led == "disk":
+        if state == "on":
+            try:
+                console.print("[bold yellow]Simulating disk activity for 1 second...[/bold yellow]")
+                # Use dd to write a dummy file to /tmp with fdatasync to force disk I/O
+                subprocess.run(["sudo", "timeout", "1s", "dd", "if=/dev/zero", "of=/tmp/disk_test", "bs=1M", "conv=fdatasync"], 
+                               stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL)
+                console.banner("SUCCESS", "Disk activity simulated")
+            except Exception as e:
+                console.error(f"Failed to simulate disk activity: {e}")
+        else:
+            console.warning("Disk LED reflects actual I/O activity and cannot be manually turned 'off'.")
+        return
+
+    # Handle ACT and PWR LEDs
     led_map = {
         "act": "ACT",
         "pwr": "PWR"
     }
     
-    led_name = led_map[led.lower()]
-    brightness = "1" if state.lower() == "on" else "0"
+    led_name = led_map[led]
+    brightness = "1" if state == "on" else "0"
     led_path = f"/sys/class/leds/{led_name}"
     
     try:

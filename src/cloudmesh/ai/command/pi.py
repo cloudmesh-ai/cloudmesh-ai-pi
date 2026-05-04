@@ -333,14 +333,14 @@ def discover_usb():
 
             # Row 1: Top ports
             layout_table.add_row(
-                get_slot_text(1),
+                get_slot_text(4),
                 get_slot_text(2),
                 "[bold]Ethernet[/bold]\n[dim]Port[/dim]"
             )
             # Row 2: Bottom ports
             layout_table.add_row(
+                get_slot_text(5),
                 get_slot_text(3),
-                get_slot_text(4),
                 ""
             )
             

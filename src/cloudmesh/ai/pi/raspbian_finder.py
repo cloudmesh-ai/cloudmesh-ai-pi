@@ -172,7 +172,8 @@ class RaspbianFinder(USBFinderBase):
                 last_match = matches[-1]
                 port = int(last_match[1])
                 if 1 <= port <= 4:
-                    return port
+                    # Map kernel ports 1-4 to physical ports 2-5 as per ports.md
+                    return port + 1
         except Exception:
             pass
         return 0

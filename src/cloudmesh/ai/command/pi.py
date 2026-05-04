@@ -254,7 +254,6 @@ def discover_usb():
         console.print(table)
 
         if slot_map:
-            from rich.table import Table
             from rich import box
 
             console.print("\n[bold cyan]USB Slot Map (Physical Layout):[/bold cyan]")

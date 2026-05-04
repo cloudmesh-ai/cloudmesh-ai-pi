@@ -260,14 +260,24 @@ def discover_usb():
             console.print("[dim](Facing the ports, Ethernet on the right)[/dim]")
             
             layout_table = Table(show_header=False, box=box.ROUNDED, show_edge=True)
-            layout_table.add_column(justify="center", style="black on white") # USB 2.0
-            layout_table.add_column(justify="center", style="blue")           # USB 3.0
+            layout_table.add_column(justify="center", style="white on black") # USB 2.0
+            layout_table.add_column(justify="center", style="white on blue")  # USB 3.0
             layout_table.add_column(justify="center", style="cyan")           # Ethernet
 
             def get_slot_text(slot):
                 name = slot_map.get(slot, "Empty")
                 boot = " [bold green][BOOT][/bold green]" if slot == boot_slot else ""
-                return f"[Slot {slot}]\n{name}{boot}"
+                
+                # Find device details for this slot
+                speed = ""
+                size = ""
+                for dev in devices:
+                    if str(dev.get("slot")) == str(slot):
+                        speed = f"({dev.get('speed', 'Unknown')})"
+                        size = f" {dev.get('size', 'Unknown')}"
+                        break
+                
+                return f"[Slot {slot}]\n{name}{boot}\n{speed}{size}"
 
             # Row 1: Top ports
             layout_table.add_row(

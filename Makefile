@@ -7,6 +7,8 @@ GIT = git
 PIP = pip
 PYTHON = python3
 
+.PHONY: all install test test-html upload tag release uninstall-all clean reinstall
+
 # Build and install
 all: install
 
@@ -16,6 +18,10 @@ install:
 # Testing
 test:
 	$(PYTHON) -m pytest -v tests
+
+test-html:
+	$(PYTHON) -m pytest -v --html=.report.html tests
+	open .report.html
 
 # Release
 upload:

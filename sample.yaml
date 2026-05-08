@@ -1,0 +1,21 @@
+defaults:
+  prefix: "pi"
+  range: "01-04"
+  image: "raspios_lite_arm64"
+  username: "admin"
+  key_path: "~/.ssh/id_ed25519.pub"
+  # Additional configuration injected into /etc/cloudmesh_config.json on the Pi
+  memory_limit: "2G"
+  swap_size: "4G"
+  cpu_shares: 1024
+
+nodes:
+  # This will expand to claw-node-01, claw-node-02, claw-node-03, claw-node-04
+  "{prefix}-{range}":
+    role: "worker"
+    gpu_enabled: false
+  
+  # Example of an explicit override for a specific node
+  #"claw-node-01":
+  #  role: "master"
+  #  gpu_enabled: true

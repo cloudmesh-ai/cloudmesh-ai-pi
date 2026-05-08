@@ -1,0 +1,83 @@
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+Node Name: openclaw-node
+Username: admin
+Image: raspios_lite_arm64
+SSH Key: /home/admin/.ssh/id_ed25519.pub
+
+Additional Configuration (Injected into Pi):
+cpu_shares: 1024
+gpu_enabled: false
+image: raspios_lite_arm64
+key_path: ~/.ssh/id_ed25519.pub
+memory_limit: 2G
+prefix: pi
+range: 01-04
+role: worker
+swap_size: 4G
+username: admin
+
+
+
+This is what I will burn. Is this ok? [y/N]: y
+Set password for Pi users: 
+  ╭───────────────────────────────────────────────────────────── CLUSTER BURN START ──────────────────────────────────────────────────────────────╮
+  │ Pending Nodes: 4                                                                                                                              │
+  ╰───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+Found 4 available slots. Processing next batch...
+  ╭────────────────────────────────────────────────────────── BURNING NODE: {prefix}-01 ──────────────────────────────────────────────────────────╮
+  │ Using Device: /dev/sdd                                                                                                                        │
+  ╰───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+  ╭───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+  │                                                              STEP 2: FLASHING OS                                                              │
+  ╰───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+Executing command: sudo rpi-imager --cli --cloudinit-userdata /tmp/tmpdqjqdseg.yaml https://downloads.raspberrypi.org/raspios_lite_arm64.img.xz 
+/dev/sdd
+/tmp/.mount_rpi-imaNoPcK/usr/bin/rpi-imager: error while loading shared libraries: libOpenGL.so.0: cannot open shared object file: No such file or directory
+ERROR: Flashing failed: Command '['sudo', 'rpi-imager', '--cli', '--cloudinit-userdata', '/tmp/tmpdqjqdseg.yaml', 
+'https://downloads.raspberrypi.org/raspios_lite_arm64.img.xz', '/dev/sdd']' returned non-zero exit status 127.
+ERROR: Failed to burn {prefix}-01 on /dev/sdd: Command '['sudo', 'rpi-imager', '--cli', '--cloudinit-userdata', '/tmp/tmpdqjqdseg.yaml', 
+'https://downloads.raspberrypi.org/raspios_lite_arm64.img.xz', '/dev/sdd']' returned non-zero exit status 127.
+  ╭────────────────────────────────────────────────────────── BURNING NODE: {prefix}-02 ──────────────────────────────────────────────────────────╮
+  │ Using Device: /dev/sda                                                                                                                        │
+  ╰───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+  ╭───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+  │                                                              STEP 2: FLASHING OS                                                              │
+  ╰───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+Executing command: sudo rpi-imager --cli --cloudinit-userdata /tmp/tmpjoqowyvp.yaml https://downloads.raspberrypi.org/raspios_lite_arm64.img.xz 
+/dev/sda
+/tmp/.mount_rpi-imchnOIc/usr/bin/rpi-imager: error while loading shared libraries: libOpenGL.so.0: cannot open shared object file: No such file or directory
+ERROR: Flashing failed: Command '['sudo', 'rpi-imager', '--cli', '--cloudinit-userdata', '/tmp/tmpjoqowyvp.yaml', 
+'https://downloads.raspberrypi.org/raspios_lite_arm64.img.xz', '/dev/sda']' returned non-zero exit status 127.
+ERROR: Failed to burn {prefix}-02 on /dev/sda: Command '['sudo', 'rpi-imager', '--cli', '--cloudinit-userdata', '/tmp/tmpjoqowyvp.yaml', 
+'https://downloads.raspberrypi.org/raspios_lite_arm64.img.xz', '/dev/sda']' returned non-zero exit status 127.
+  ╭────────────────────────────────────────────────────────── BURNING NODE: {prefix}-03 ──────────────────────────────────────────────────────────╮
+  │ Using Device: /dev/sdc                                                                                                                        │
+  ╰───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+  ╭───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+  │                                                              STEP 2: FLASHING OS                                                              │
+  ╰───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+Executing command: sudo rpi-imager --cli --cloudinit-userdata /tmp/tmpm8gt94co.yaml https://downloads.raspberrypi.org/raspios_lite_arm64.img.xz 
+/dev/sdc
+/tmp/.mount_rpi-impCMAJm/usr/bin/rpi-imager: error while loading shared libraries: libOpenGL.so.0: cannot open shared object file: No such file or directory
+ERROR: Flashing failed: Command '['sudo', 'rpi-imager', '--cli', '--cloudinit-userdata', '/tmp/tmpm8gt94co.yaml', 
+'https://downloads.raspberrypi.org/raspios_lite_arm64.img.xz', '/dev/sdc']' returned non-zero exit status 127.
+ERROR: Failed to burn {prefix}-03 on /dev/sdc: Command '['sudo', 'rpi-imager', '--cli', '--cloudinit-userdata', '/tmp/tmpm8gt94co.yaml', 
+'https://downloads.raspberrypi.org/raspios_lite_arm64.img.xz', '/dev/sdc']' returned non-zero exit status 127.
+  ╭────────────────────────────────────────────────────────── BURNING NODE: {prefix}-04 ──────────────────────────────────────────────────────────╮
+  │ Using Device: /dev/sdb                                                                                                                        │
+  ╰───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+  ╭───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+  │                                                              STEP 2: FLASHING OS                                                              │
+  ╰───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+Executing command: sudo rpi-imager --cli --cloudinit-userdata /tmp/tmppvdlhx1b.yaml https://downloads.raspberrypi.org/raspios_lite_arm64.img.xz 
+/dev/sdb
+/tmp/.mount_rpi-imcMhInD/usr/bin/rpi-imager: error while loading shared libraries: libOpenGL.so.0: cannot open shared object file: No such file or directory
+ERROR: Flashing failed: Command '['sudo', 'rpi-imager', '--cli', '--cloudinit-userdata', '/tmp/tmppvdlhx1b.yaml', 
+'https://downloads.raspberrypi.org/raspios_lite_arm64.img.xz', '/dev/sdb']' returned non-zero exit status 127.
+ERROR: Failed to burn {prefix}-04 on /dev/sdb: Command '['sudo', 'rpi-imager', '--cli', '--cloudinit-userdata', '/tmp/tmppvdlhx1b.yaml', 
+'https://downloads.raspberrypi.org/raspios_lite_arm64.img.xz', '/dev/sdb']' returned non-zero exit status 127.
+  ╭─────────────────────────────────────────────────────────────── BATCH COMPLETE ────────────────────────────────────────────────────────────────╮
+  │ 4 nodes still remaining.                                                                                                                      │
+  ╰───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+ERROR: An error occurred: name 'click' is not defined

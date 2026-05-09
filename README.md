@@ -247,3 +247,8 @@ The project includes a test suite to verify the burner and installer logic. You 
 ```bash
 make test
 ```
+
+## Core Dependencies
+This project depends on the following core components of the Cloudmesh AI ecosystem:
+- [cloudmesh-ai-common](https://github.com/cloudmesh-ai/cloudmesh-ai-common)
+- [cloudmesh-ai-cmc](https://github.com/cloudmesh-ai/cloudmesh-ai-cmc)

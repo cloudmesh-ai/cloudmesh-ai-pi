@@ -7,7 +7,7 @@ GIT = git
 PIP = pip
 PYTHON = python3
 
-.PHONY: all install test test-html upload tag release uninstall-all clean reinstall
+.PHONY: all install test test-html upload tag release uninstall-all clean reinstall doc
 
 # Build and install
 all: install
@@ -58,3 +58,9 @@ reinstall: uninstall-all clean
 publish:
 	@echo "Deploying MkDocs site to GitHub Pages..."
 	mkdocs gh-deploy --clean
+
+
+# --- DOCUMENTATION ---
+
+doc:
+	mkdocs build

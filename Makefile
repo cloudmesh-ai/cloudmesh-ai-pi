@@ -7,7 +7,7 @@ GIT = git
 PIP = pip
 PYTHON = python3
 
-.PHONY: all install test test-html upload tag release uninstall-all clean reinstall doc
+.PHONY: all install test test-html upload tag release uninstall-all clean reinstall doc view
 
 # Build and install
 all: install
@@ -64,3 +64,6 @@ publish:
 
 doc:
 	mkdocs build
+
+view:
+	mkdocs serve

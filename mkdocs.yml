@@ -3,14 +3,16 @@ extra_css:
 - css/custom.css
 nav:
 - Home: index.md
+- Documents:
+  - README: readme.md
+  - fixes: fixes.md
+  - ports: ports.md
 - Project:
   - Changelog: CHANGELOG.md
   - GitHub: https://github.com/cloudmesh-ai/cloudmesh-ai-pi
   - Issues: https://github.com/cloudmesh-ai/cloudmesh-ai-pi/issues
 - API Reference: api.md
-- README: readme.md
-- fixes: fixes.md
-- ports: ports.md
+
 plugins:
 - search
 - mkdocstrings:

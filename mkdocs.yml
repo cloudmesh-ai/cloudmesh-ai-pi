@@ -8,7 +8,7 @@ nav:
   - GitHub: https://github.com/cloudmesh-ai/cloudmesh-ai-pi
   - Issues: https://github.com/cloudmesh-ai/cloudmesh-ai-pi/issues
 - API Reference: api.md
-- README: README.md
+- README: readme.md
 - fixes: fixes.md
 - ports: ports.md
 plugins:
